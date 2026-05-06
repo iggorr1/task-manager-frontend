@@ -12,8 +12,14 @@ const STATUSES = [
 ];
 
 function App() {
+  const [authMode, setAuthMode] = useState("login");
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [tasks, setTasks] = useState([]);
 
@@ -23,6 +29,29 @@ function App() {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
   const [sort, setSort] = useState("createdAt,desc");
+
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  async function handleRegister(e) {
+    e.preventDefault();
+
+    try {
+      await axios.post(`${API_URL}/users/register`, {
+        name,
+        email,
+        login,
+        password,
+      });
+
+      alert("Register successful. Now login.");
+      setAuthMode("login");
+    } catch (error) {
+      alert("Register failed");
+      console.error(error);
+    }
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -112,6 +141,46 @@ function App() {
     }
   }
 
+  function startEdit(task) {
+    setEditingTaskId(task.id);
+    setEditTitle(task.title || "");
+    setEditDescription(task.description || "");
+  }
+
+  function cancelEdit() {
+    setEditingTaskId(null);
+    setEditTitle("");
+    setEditDescription("");
+  }
+
+  async function saveEdit(taskId) {
+    if (!editTitle.trim()) {
+      alert("Title is required");
+      return;
+    }
+
+    try {
+      await axios.put(
+          `${API_URL}/tasks/${taskId}`,
+          {
+            title: editTitle,
+            description: editDescription,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+      );
+
+      cancelEdit();
+      await fetchTasks();
+    } catch (error) {
+      alert("Failed to update task");
+      console.error(error);
+    }
+  }
+
   async function updateTaskStatus(taskId, status) {
     try {
       await axios.patch(
@@ -131,6 +200,27 @@ function App() {
     }
   }
 
+  async function deleteTask(taskId) {
+    const confirmed = confirm("Delete this task?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/tasks/${taskId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      await fetchTasks();
+    } catch (error) {
+      alert("Failed to delete task");
+      console.error(error);
+    }
+  }
+
   function handleStatusFilter(status) {
     setSelectedStatus(status);
     fetchTasks(token, status, searchTitle, sort);
@@ -139,6 +229,11 @@ function App() {
   function handleSearch(e) {
     e.preventDefault();
     fetchTasks(token, selectedStatus, searchTitle, sort);
+  }
+
+  function clearSearch() {
+    setSearchTitle("");
+    fetchTasks(token, selectedStatus, "", sort);
   }
 
   function handleSortChange(e) {
@@ -153,6 +248,9 @@ function App() {
     setTasks([]);
     setLogin("");
     setPassword("");
+    setName("");
+    setEmail("");
+    cancelEdit();
   }
 
   function getStatusCount(status) {
@@ -170,9 +268,27 @@ function App() {
             <div className="app-logo">TM</div>
 
             <h1>Task Manager</h1>
-            <p>Login to your workspace</p>
+            <p>{authMode === "login" ? "Login to your workspace" : "Create account"}</p>
 
-            <form onSubmit={handleLogin}>
+            <form onSubmit={authMode === "login" ? handleLogin : handleRegister}>
+              {authMode === "register" && (
+                  <>
+                    <input
+                        type="text"
+                        placeholder="Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </>
+              )}
+
               <input
                   type="text"
                   placeholder="Login"
@@ -187,8 +303,19 @@ function App() {
                   onChange={(e) => setPassword(e.target.value)}
               />
 
-              <button type="submit">Login</button>
+              <button type="submit">
+                {authMode === "login" ? "Login" : "Register"}
+              </button>
             </form>
+
+            <button
+                className="auth-switch-button"
+                onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
+            >
+              {authMode === "login"
+                  ? "No account? Register"
+                  : "Already have account? Login"}
+            </button>
           </div>
         </div>
     );
@@ -236,6 +363,12 @@ function App() {
               />
 
               <button type="submit">Search</button>
+
+              {searchTitle && (
+                  <button type="button" onClick={clearSearch}>
+                    Clear
+                  </button>
+              )}
             </form>
           </div>
 
@@ -305,23 +438,55 @@ function App() {
                   </span>
                       </div>
 
-                      <p>{task.description || "No description"}</p>
+                      {editingTaskId === task.id ? (
+                          <div className="edit-task-form">
+                            <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                            />
 
-                      <div className="task-actions">
-                        <button onClick={() => updateTaskStatus(task.id, "TODO")}>
-                          TODO
-                        </button>
+                            <input
+                                type="text"
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                            />
 
-                        <button
-                            onClick={() => updateTaskStatus(task.id, "IN_PROGRESS")}
-                        >
-                          Progress
-                        </button>
+                            <div className="task-actions">
+                              <button onClick={() => saveEdit(task.id)}>Save</button>
+                              <button onClick={cancelEdit}>Cancel</button>
+                            </div>
+                          </div>
+                      ) : (
+                          <>
+                            <p>{task.description || "No description"}</p>
 
-                        <button onClick={() => updateTaskStatus(task.id, "DONE")}>
-                          Done
-                        </button>
-                      </div>
+                            <div className="task-actions">
+                              <button onClick={() => updateTaskStatus(task.id, "TODO")}>
+                                TODO
+                              </button>
+
+                              <button
+                                  onClick={() => updateTaskStatus(task.id, "IN_PROGRESS")}
+                              >
+                                Progress
+                              </button>
+
+                              <button onClick={() => updateTaskStatus(task.id, "DONE")}>
+                                Done
+                              </button>
+
+                              <button onClick={() => startEdit(task)}>Edit</button>
+
+                              <button
+                                  className="danger-button"
+                                  onClick={() => deleteTask(task.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </>
+                      )}
                     </article>
                 ))
             )}

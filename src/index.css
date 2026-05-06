@@ -109,3 +109,30 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+.auth-switch-button {
+  width: 100%;
+  margin-top: 12px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border-soft);
+}
+
+.auth-switch-button:hover {
+  background: var(--panel-hover);
+  color: var(--text);
+}
+
+.edit-task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.danger-button {
+  color: #fca5a5 !important;
+}
+
+.danger-button:hover {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #fecaca !important;
+}
