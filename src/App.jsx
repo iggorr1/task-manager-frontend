@@ -8,6 +8,9 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [tasks, setTasks] = useState([]);
 
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+
   async function handleLogin(e) {
     e.preventDefault();
 
@@ -44,10 +47,44 @@ function App() {
     }
   }
 
+  async function createTask(e) {
+    e.preventDefault();
+
+    if (!newTitle.trim()) {
+      alert("Title is required");
+      return;
+    }
+
+    try {
+      await axios.post(
+          "http://localhost:8080/tasks",
+          {
+            title: newTitle,
+            description: newDescription,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+      );
+
+      setNewTitle("");
+      setNewDescription("");
+
+      await fetchTasks();
+    } catch (error) {
+      alert("Failed to create task");
+      console.error(error);
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     setToken("");
     setTasks([]);
+    setLogin("");
+    setPassword("");
   }
 
   return (
@@ -87,6 +124,24 @@ function App() {
                 </div>
 
                 <button onClick={() => fetchTasks()}>Refresh tasks</button>
+
+                <form className="create-task-form" onSubmit={createTask}>
+                  <input
+                      type="text"
+                      placeholder="Task title"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                  />
+
+                  <input
+                      type="text"
+                      placeholder="Task description"
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                  />
+
+                  <button type="submit">Create task</button>
+                </form>
 
                 <div className="tasks-list">
                   {tasks.length === 0 ? (
