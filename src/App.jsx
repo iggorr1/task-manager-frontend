@@ -79,6 +79,25 @@ function App() {
     }
   }
 
+  async function updateTaskStatus(taskId, status) {
+    try {
+      await axios.patch(
+          `http://localhost:8080/tasks/${taskId}/status`,
+          { status },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+      );
+
+      await fetchTasks();
+    } catch (error) {
+      alert("Failed to update task status");
+      console.error(error);
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     setToken("");
@@ -152,6 +171,24 @@ function App() {
                             <h3>{task.title}</h3>
                             <p>{task.description}</p>
                             <span>{task.status}</span>
+
+                            <div className="task-actions">
+                              <button onClick={() => updateTaskStatus(task.id, "TODO")}>
+                                TODO
+                              </button>
+
+                              <button
+                                  onClick={() =>
+                                      updateTaskStatus(task.id, "IN_PROGRESS")
+                                  }
+                              >
+                                In Progress
+                              </button>
+
+                              <button onClick={() => updateTaskStatus(task.id, "DONE")}>
+                                Done
+                              </button>
+                            </div>
                           </div>
                       ))
                   )}

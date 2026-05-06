@@ -76,3 +76,14 @@ button:hover {
   margin-top: 18px;
   color: #22c55e !important;
 }
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-actions button {
+  padding: 8px 10px;
+  font-size: 13px;
+}
