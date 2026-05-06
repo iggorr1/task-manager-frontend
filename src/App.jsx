@@ -2,6 +2,15 @@ import { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
+const API_URL = "http://localhost:8080";
+
+const STATUSES = [
+  { label: "All tasks", value: "" },
+  { label: "TODO", value: "TODO" },
+  { label: "IN_PROGRESS", value: "IN_PROGRESS" },
+  { label: "DONE", value: "DONE" },
+];
+
 function App() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -11,11 +20,15 @@ function App() {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
 
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [searchTitle, setSearchTitle] = useState("");
+  const [sort, setSort] = useState("createdAt,desc");
+
   async function handleLogin(e) {
     e.preventDefault();
 
     try {
-      const response = await axios.post("http://localhost:8080/users/login", {
+      const response = await axios.post(`${API_URL}/users/login`, {
         login,
         password,
       });
@@ -25,19 +38,39 @@ function App() {
       setToken(jwt);
       localStorage.setItem("token", jwt);
 
-      await fetchTasks(jwt);
+      await fetchTasks(jwt, selectedStatus, searchTitle, sort);
     } catch (error) {
       alert("Login failed");
       console.error(error);
     }
   }
 
-  async function fetchTasks(jwt = token) {
+  async function fetchTasks(
+      jwt = token,
+      status = selectedStatus,
+      title = searchTitle,
+      sortValue = sort
+  ) {
     try {
-      const response = await axios.get("http://localhost:8080/tasks", {
+      const params = {
+        page: 0,
+        size: 50,
+        sort: sortValue,
+      };
+
+      if (status) {
+        params.status = status;
+      }
+
+      if (title.trim()) {
+        params.title = title.trim();
+      }
+
+      const response = await axios.get(`${API_URL}/tasks`, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
+        params,
       });
 
       setTasks(response.data.content);
@@ -57,7 +90,7 @@ function App() {
 
     try {
       await axios.post(
-          "http://localhost:8080/tasks",
+          `${API_URL}/tasks`,
           {
             title: newTitle,
             description: newDescription,
@@ -82,7 +115,7 @@ function App() {
   async function updateTaskStatus(taskId, status) {
     try {
       await axios.patch(
-          `http://localhost:8080/tasks/${taskId}/status`,
+          `${API_URL}/tasks/${taskId}/status`,
           { status },
           {
             headers: {
@@ -98,6 +131,22 @@ function App() {
     }
   }
 
+  function handleStatusFilter(status) {
+    setSelectedStatus(status);
+    fetchTasks(token, status, searchTitle, sort);
+  }
+
+  function handleSearch(e) {
+    e.preventDefault();
+    fetchTasks(token, selectedStatus, searchTitle, sort);
+  }
+
+  function handleSortChange(e) {
+    const value = e.target.value;
+    setSort(value);
+    fetchTasks(token, selectedStatus, searchTitle, value);
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     setToken("");
@@ -106,96 +155,178 @@ function App() {
     setPassword("");
   }
 
-  return (
-      <div className="app">
-        <div className="login-card">
-          <h1>Task Manager</h1>
+  function getStatusCount(status) {
+    if (!status) {
+      return tasks.length;
+    }
 
-          {!token ? (
-              <>
-                <p>Login to your account</p>
+    return tasks.filter((task) => task.status === status).length;
+  }
 
-                <form onSubmit={handleLogin}>
-                  <input
-                      type="text"
-                      placeholder="Login"
-                      value={login}
-                      onChange={(e) => setLogin(e.target.value)}
-                  />
+  if (!token) {
+    return (
+        <div className="auth-page">
+          <div className="auth-card">
+            <div className="app-logo">TM</div>
 
-                  <input
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                  />
+            <h1>Task Manager</h1>
+            <p>Login to your workspace</p>
 
-                  <button type="submit">Login</button>
-                </form>
-              </>
-          ) : (
-              <>
-                <div className="top-bar">
-                  <p className="success">Logged in</p>
-                  <button className="secondary-button" onClick={handleLogout}>
-                    Logout
-                  </button>
-                </div>
+            <form onSubmit={handleLogin}>
+              <input
+                  type="text"
+                  placeholder="Login"
+                  value={login}
+                  onChange={(e) => setLogin(e.target.value)}
+              />
 
-                <button onClick={() => fetchTasks()}>Refresh tasks</button>
+              <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+              />
 
-                <form className="create-task-form" onSubmit={createTask}>
-                  <input
-                      type="text"
-                      placeholder="Task title"
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                  />
-
-                  <input
-                      type="text"
-                      placeholder="Task description"
-                      value={newDescription}
-                      onChange={(e) => setNewDescription(e.target.value)}
-                  />
-
-                  <button type="submit">Create task</button>
-                </form>
-
-                <div className="tasks-list">
-                  {tasks.length === 0 ? (
-                      <p>No tasks yet</p>
-                  ) : (
-                      tasks.map((task) => (
-                          <div className="task-card" key={task.id}>
-                            <h3>{task.title}</h3>
-                            <p>{task.description}</p>
-                            <span>{task.status}</span>
-
-                            <div className="task-actions">
-                              <button onClick={() => updateTaskStatus(task.id, "TODO")}>
-                                TODO
-                              </button>
-
-                              <button
-                                  onClick={() =>
-                                      updateTaskStatus(task.id, "IN_PROGRESS")
-                                  }
-                              >
-                                In Progress
-                              </button>
-
-                              <button onClick={() => updateTaskStatus(task.id, "DONE")}>
-                                Done
-                              </button>
-                            </div>
-                          </div>
-                      ))
-                  )}
-                </div>
-              </>
-          )}
+              <button type="submit">Login</button>
+            </form>
+          </div>
         </div>
+    );
+  }
+
+  return (
+      <div className="workspace">
+        <aside className="sidebar">
+          <div className="sidebar-header">
+            <div className="app-logo small">TM</div>
+            <div>
+              <h2>Task Manager</h2>
+              <p>Workspace</p>
+            </div>
+          </div>
+
+          <nav className="sidebar-section">
+            <p className="section-title">Views</p>
+
+            {STATUSES.map((status) => (
+                <button
+                    key={status.label}
+                    className={
+                      selectedStatus === status.value
+                          ? "sidebar-item active"
+                          : "sidebar-item"
+                    }
+                    onClick={() => handleStatusFilter(status.value)}
+                >
+                  <span>{status.label}</span>
+                  <span className="count">{getStatusCount(status.value)}</span>
+                </button>
+            ))}
+          </nav>
+
+          <div className="sidebar-section">
+            <p className="section-title">Search</p>
+
+            <form className="sidebar-form" onSubmit={handleSearch}>
+              <input
+                  type="text"
+                  placeholder="Search by title..."
+                  value={searchTitle}
+                  onChange={(e) => setSearchTitle(e.target.value)}
+              />
+
+              <button type="submit">Search</button>
+            </form>
+          </div>
+
+          <div className="sidebar-section">
+            <p className="section-title">Sort</p>
+
+            <select value={sort} onChange={handleSortChange}>
+              <option value="createdAt,desc">Newest first</option>
+              <option value="createdAt,asc">Oldest first</option>
+              <option value="title,asc">Title A-Z</option>
+              <option value="title,desc">Title Z-A</option>
+            </select>
+          </div>
+
+          <button className="logout-button" onClick={handleLogout}>
+            Logout
+          </button>
+        </aside>
+
+        <main className="main">
+          <header className="main-header">
+            <div>
+              <h1>
+                {selectedStatus ? selectedStatus.replace("_", " ") : "All tasks"}
+              </h1>
+              <p>
+                {tasks.length} task{tasks.length === 1 ? "" : "s"} loaded
+              </p>
+            </div>
+
+            <button onClick={() => fetchTasks()}>Refresh</button>
+          </header>
+
+          <section className="create-panel">
+            <form onSubmit={createTask}>
+              <input
+                  type="text"
+                  placeholder="New task title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+              />
+
+              <input
+                  type="text"
+                  placeholder="Description"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+              />
+
+              <button type="submit">Create task</button>
+            </form>
+          </section>
+
+          <section className="tasks-grid">
+            {tasks.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No tasks found</h3>
+                  <p>Create a task or change filters in the sidebar.</p>
+                </div>
+            ) : (
+                tasks.map((task) => (
+                    <article className="task-card" key={task.id}>
+                      <div className="task-card-header">
+                        <h3>{task.title}</h3>
+                        <span className={`status-badge ${task.status?.toLowerCase()}`}>
+                    {task.status || "NO_STATUS"}
+                  </span>
+                      </div>
+
+                      <p>{task.description || "No description"}</p>
+
+                      <div className="task-actions">
+                        <button onClick={() => updateTaskStatus(task.id, "TODO")}>
+                          TODO
+                        </button>
+
+                        <button
+                            onClick={() => updateTaskStatus(task.id, "IN_PROGRESS")}
+                        >
+                          Progress
+                        </button>
+
+                        <button onClick={() => updateTaskStatus(task.id, "DONE")}>
+                          Done
+                        </button>
+                      </div>
+                    </article>
+                ))
+            )}
+          </section>
+        </main>
       </div>
   );
 }
