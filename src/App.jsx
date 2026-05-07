@@ -58,6 +58,13 @@ function App() {
     setMessageType("success");
   }
 
+  function useDemoAccount() {
+    clearMessage();
+    setAuthMode("login");
+    setLogin("demo");
+    setPassword("demo123");
+  }
+
   async function handleRegister(e) {
     e.preventDefault();
     clearMessage();
@@ -381,6 +388,20 @@ function App() {
                 {authMode === "login" ? "Login" : "Register"}
               </button>
             </form>
+
+            <div className="demo-account">
+              <div>
+                <strong>Demo account</strong>
+                <p>Login: demo · Password: demo123</p>
+              </div>
+
+              <button
+                  type="button"
+                  onClick={useDemoAccount}
+              >
+                Use demo account
+              </button>
+            </div>
 
             <button
                 className="auth-switch-button"
