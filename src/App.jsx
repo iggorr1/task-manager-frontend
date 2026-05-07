@@ -399,6 +399,8 @@ function App() {
                   <>
                     <input
                         type="text"
+                        name="name"
+                        autoComplete="name"
                         placeholder="Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -406,6 +408,8 @@ function App() {
 
                     <input
                         type="email"
+                        name="email"
+                        autoComplete="email"
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -415,6 +419,8 @@ function App() {
 
               <input
                   type="text"
+                  name="username"
+                  autoComplete="username"
                   placeholder="Login"
                   value={login}
                   onChange={(e) => setLogin(e.target.value)}
@@ -422,6 +428,8 @@ function App() {
 
               <input
                   type="password"
+                  name="password"
+                  autoComplete={authMode === "login" ? "current-password" : "new-password"}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
