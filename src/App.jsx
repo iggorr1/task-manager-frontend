@@ -536,6 +536,18 @@ function App() {
             </select>
           </div>
 
+          <div className="project-links">
+            <p className="section-title">Project</p>
+
+            <a
+                href="https://github.com/iggorr1"
+                target="_blank"
+                rel="noreferrer"
+            >
+              GitHub profile
+            </a>
+          </div>
+
           <button className="logout-button" onClick={handleLogout}>
             Logout
           </button>
