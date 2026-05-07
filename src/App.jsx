@@ -82,7 +82,10 @@ function App() {
       setAuthMode("login");
     } catch (error) {
       showMessage("Register failed", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -108,7 +111,10 @@ function App() {
       showMessage("Login successful.");
     } catch (error) {
       showMessage("Login failed", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -143,7 +149,10 @@ function App() {
       setTasks(response.data.content);
     } catch (error) {
       showMessage("Failed to load tasks", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -163,7 +172,10 @@ function App() {
       setAllTasks(response.data.content);
     } catch (error) {
       showMessage("Failed to load task counters", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -198,7 +210,10 @@ function App() {
       showMessage("Task created.");
     } catch (error) {
       showMessage("Failed to create task", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -241,7 +256,10 @@ function App() {
       showMessage("Task updated.");
     } catch (error) {
       showMessage("Failed to update task", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -264,7 +282,10 @@ function App() {
       showMessage("Task status updated.");
     } catch (error) {
       showMessage("Failed to update task status", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
@@ -293,7 +314,10 @@ function App() {
       showMessage("Task deleted.");
     } catch (error) {
       showMessage("Failed to delete task", "error");
-      console.error(error);
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
     }
   }
 
