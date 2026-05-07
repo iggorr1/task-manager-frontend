@@ -293,17 +293,6 @@ form {
   font-size: 13px;
 }
 
-.main-header button {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
-}
-
-.main-header button:hover {
-  background: var(--panel);
-  color: var(--text);
-}
-
 /* CREATE TASK */
 
 .create-panel {
@@ -461,5 +450,82 @@ form {
 
   .tasks-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    background: var(--bg);
+  }
+
+  button {
+    min-height: 40px;
+  }
+
+  .auth-page {
+    padding: 14px;
+    align-items: flex-start;
+  }
+
+  .auth-card {
+    margin-top: 32px;
+    padding: 22px;
+    border-radius: var(--radius-lg);
+  }
+
+  .workspace {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 12px;
+    box-shadow: none;
+  }
+
+  .sidebar-header {
+    padding: 4px 4px 12px;
+    margin-bottom: 12px;
+  }
+
+  .sidebar-section {
+    margin-bottom: 16px;
+  }
+
+  .sidebar-section nav,
+  .sidebar-section {
+    width: 100%;
+  }
+
+  .sidebar-item {
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .sidebar-form {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .main {
+    padding: 16px 12px 24px;
+  }
+
+  .main-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .main-header h1 {
+    font-size: 24px;
+  }
+
+  .main-header button {
+    width: 100%;
   }
 }

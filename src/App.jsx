@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
 
@@ -34,6 +34,16 @@ function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    fetchTasks(token, selectedStatus, searchTitle, sort);
+    fetchAllTasks(token);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -130,27 +140,6 @@ function App() {
       console.error(error);
     }
   }
-
-  async function fetchAllTasks(jwt = token) {
-    try {
-      const response = await axios.get(`${API_URL}/tasks`, {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-        params: {
-          page: 0,
-          size: 1000,
-          sort: "createdAt,desc",
-        },
-      });
-
-      setAllTasks(response.data.content);
-    } catch (error) {
-      alert("Failed to load task counters");
-      console.error(error);
-    }
-  }
-
 
   async function createTask(e) {
     e.preventDefault();
@@ -446,8 +435,6 @@ function App() {
                 {tasks.length} task{tasks.length === 1 ? "" : "s"} loaded
               </p>
             </div>
-
-            <button onClick={() => fetchTasks()}>Refresh</button>
           </header>
 
           <section className="create-panel">
