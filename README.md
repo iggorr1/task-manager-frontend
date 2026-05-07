@@ -109,7 +109,7 @@ task-manager-frontend
 This frontend works with a separate backend repository:
 
 ```text
-https://github.com/iggorr1/demo
+https://github.com/iggorr1/task-flow-backend
 ```
 
 Backend API production URL:
