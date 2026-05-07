@@ -261,6 +261,30 @@ form {
   color: var(--text);
 }
 
+/* MESSAGES */
+
+.message-banner {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.message-banner.success {
+  color: var(--green);
+  background: rgba(125, 211, 167, 0.08);
+  border-color: rgba(125, 211, 167, 0.2);
+}
+
+.message-banner.error {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.22);
+}
+
 /* MAIN */
 
 .main {
@@ -399,6 +423,15 @@ form {
 
 .task-actions button:hover {
   background: #3a3a3a;
+}
+
+.task-actions .danger-button {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.task-actions .danger-button:hover {
+  background: rgba(248, 113, 113, 0.18);
 }
 
 .empty-state {

@@ -34,6 +34,9 @@ function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [messageType, setMessageType] = useState("success");
 
   useEffect(() => {
     if (!token) {
@@ -45,8 +48,19 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function showMessage(text, type = "success") {
+    setMessage(text);
+    setMessageType(type);
+  }
+
+  function clearMessage() {
+    setMessage(null);
+    setMessageType("success");
+  }
+
   async function handleRegister(e) {
     e.preventDefault();
+    clearMessage();
 
     try {
       await axios.post(`${API_URL}/users/register`, {
@@ -56,16 +70,17 @@ function App() {
         password,
       });
 
-      alert("Register successful. Now login.");
+      showMessage("Registration successful. Now login.");
       setAuthMode("login");
     } catch (error) {
-      alert("Register failed");
+      showMessage("Register failed", "error");
       console.error(error);
     }
   }
 
   async function handleLogin(e) {
     e.preventDefault();
+    clearMessage();
 
     try {
       const response = await axios.post(`${API_URL}/users/login`, {
@@ -80,8 +95,9 @@ function App() {
 
       await fetchTasks(jwt, selectedStatus, searchTitle, sort);
       await fetchAllTasks(jwt);
+      showMessage("Login successful.");
     } catch (error) {
-      alert("Login failed");
+      showMessage("Login failed", "error");
       console.error(error);
     }
   }
@@ -116,7 +132,7 @@ function App() {
 
       setTasks(response.data.content);
     } catch (error) {
-      alert("Failed to load tasks");
+      showMessage("Failed to load tasks", "error");
       console.error(error);
     }
   }
@@ -136,16 +152,17 @@ function App() {
 
       setAllTasks(response.data.content);
     } catch (error) {
-      alert("Failed to load task counters");
+      showMessage("Failed to load task counters", "error");
       console.error(error);
     }
   }
 
   async function createTask(e) {
     e.preventDefault();
+    clearMessage();
 
     if (!newTitle.trim()) {
-      alert("Title is required");
+      showMessage("Title is required", "error");
       return;
     }
 
@@ -168,8 +185,9 @@ function App() {
 
       await fetchTasks();
       await fetchAllTasks();
+      showMessage("Task created.");
     } catch (error) {
-      alert("Failed to create task");
+      showMessage("Failed to create task", "error");
       console.error(error);
     }
   }
@@ -187,8 +205,9 @@ function App() {
   }
 
   async function saveEdit(taskId) {
+    clearMessage();
     if (!editTitle.trim()) {
-      alert("Title is required");
+      showMessage("Title is required", "error");
       return;
     }
 
@@ -209,13 +228,16 @@ function App() {
       cancelEdit();
       await fetchTasks();
       await fetchAllTasks();
+      showMessage("Task updated.");
     } catch (error) {
-      alert("Failed to update task");
+      showMessage("Failed to update task", "error");
       console.error(error);
     }
   }
 
   async function updateTaskStatus(taskId, status) {
+    clearMessage();
+
     try {
       await axios.patch(
           `${API_URL}/tasks/${taskId}/status`,
@@ -229,18 +251,24 @@ function App() {
 
       await fetchTasks();
       await fetchAllTasks();
+      showMessage("Task status updated.");
     } catch (error) {
-      alert("Failed to update task status");
+      showMessage("Failed to update task status", "error");
       console.error(error);
     }
   }
 
-  async function deleteTask(taskId) {
-    const confirmed = confirm("Delete this task?");
+  function startDelete(taskId) {
+    clearMessage();
+    setPendingDeleteTaskId(taskId);
+  }
 
-    if (!confirmed) {
-      return;
-    }
+  function cancelDelete() {
+    setPendingDeleteTaskId(null);
+  }
+
+  async function deleteTask(taskId) {
+    clearMessage();
 
     try {
       await axios.delete(`${API_URL}/tasks/${taskId}`, {
@@ -251,8 +279,10 @@ function App() {
 
       await fetchTasks();
       await fetchAllTasks();
+      setPendingDeleteTaskId(null);
+      showMessage("Task deleted.");
     } catch (error) {
-      alert("Failed to delete task");
+      showMessage("Failed to delete task", "error");
       console.error(error);
     }
   }
@@ -288,6 +318,7 @@ function App() {
     setName("");
     setEmail("");
     cancelEdit();
+    clearMessage();
   }
 
   function getStatusCount(status) {
@@ -306,6 +337,12 @@ function App() {
 
             <h1>Task Manager</h1>
             <p>{authMode === "login" ? "Login to your workspace" : "Create account"}</p>
+
+            {message && (
+                <div className={`message-banner ${messageType}`}>
+                  {message}
+                </div>
+            )}
 
             <form onSubmit={authMode === "login" ? handleLogin : handleRegister}>
               {authMode === "register" && (
@@ -437,6 +474,12 @@ function App() {
             </div>
           </header>
 
+          {message && (
+              <div className={`message-banner ${messageType}`}>
+                {message}
+              </div>
+          )}
+
           <section className="create-panel">
             <form onSubmit={createTask}>
               <input
@@ -512,13 +555,27 @@ function App() {
                               </button>
 
                               <button onClick={() => startEdit(task)}>Edit</button>
+                              {pendingDeleteTaskId === task.id ? (
+                                  <>
+                                    <button
+                                        className="danger-button"
+                                        onClick={() => deleteTask(task.id)}
+                                    >
+                                      Confirm
+                                    </button>
 
-                              <button
-                                  className="danger-button"
-                                  onClick={() => deleteTask(task.id)}
-                              >
-                                Delete
-                              </button>
+                                    <button onClick={cancelDelete}>
+                                      Cancel
+                                    </button>
+                                  </>
+                              ) : (
+                                  <button
+                                      className="danger-button"
+                                      onClick={() => startDelete(task.id)}
+                                  >
+                                    Delete
+                                  </button>
+                              )}
                             </div>
                           </>
                       )}
@@ -532,3 +589,9 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
+
