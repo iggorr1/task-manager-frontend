@@ -21,6 +21,7 @@ function App() {
   const [password, setPassword] = useState("");
 
   const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [currentLogin, setCurrentLogin] = useState(localStorage.getItem("login") || "");
   const [tasks, setTasks] = useState([]);
   const [allTasks, setAllTasks] = useState([]);
 
@@ -99,6 +100,8 @@ function App() {
 
       setToken(jwt);
       localStorage.setItem("token", jwt);
+      setCurrentLogin(login);
+      localStorage.setItem("login", login);
 
       await fetchTasks(jwt, selectedStatus, searchTitle, sort);
       await fetchAllTasks(jwt);
@@ -317,7 +320,9 @@ function App() {
 
   function handleLogout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("login");
     setToken("");
+    setCurrentLogin("");
     setTasks([]);
     setAllTasks([]);
     setLogin("");
@@ -426,6 +431,13 @@ function App() {
               <p>Workspace</p>
             </div>
           </div>
+
+          {currentLogin && (
+              <div className="user-badge">
+                <span>Logged in as</span>
+                <strong>{currentLogin}</strong>
+              </div>
+          )}
 
           <nav className="sidebar-section">
             <p className="section-title">Views</p>

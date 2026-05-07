@@ -221,6 +221,29 @@ form {
   font-size: 12px;
 }
 
+.user-badge {
+  margin: 0 8px 18px;
+  padding: 10px 11px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.user-badge span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted-soft);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.user-badge strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
 .sidebar-section {
   margin-bottom: 22px;
 }
