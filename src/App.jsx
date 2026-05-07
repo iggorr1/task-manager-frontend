@@ -341,6 +341,20 @@ function App() {
     return allTasks.filter((task) => task.status === status).length;
   }
 
+  function formatTaskDate(dateValue) {
+    if (!dateValue) {
+      return "Unknown date";
+    }
+
+    return new Date(dateValue).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   if (!token) {
     return (
         <div className="auth-page">
@@ -571,6 +585,10 @@ function App() {
                       ) : (
                           <>
                             <p>{task.description || "No description"}</p>
+
+                            <div className="task-meta">
+                              Created: {formatTaskDate(task.createdAt)}
+                            </div>
 
                             <div className="task-actions">
                               <button onClick={() => updateTaskStatus(task.id, "TODO")}>
