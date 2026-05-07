@@ -22,6 +22,7 @@ function App() {
 
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [tasks, setTasks] = useState([]);
+  const [allTasks, setAllTasks] = useState([]);
 
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -68,6 +69,7 @@ function App() {
       localStorage.setItem("token", jwt);
 
       await fetchTasks(jwt, selectedStatus, searchTitle, sort);
+      await fetchAllTasks(jwt);
     } catch (error) {
       alert("Login failed");
       console.error(error);
@@ -109,6 +111,47 @@ function App() {
     }
   }
 
+  async function fetchAllTasks(jwt = token) {
+    try {
+      const response = await axios.get(`${API_URL}/tasks`, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+        params: {
+          page: 0,
+          size: 1000,
+          sort: "createdAt,desc",
+        },
+      });
+
+      setAllTasks(response.data.content);
+    } catch (error) {
+      alert("Failed to load task counters");
+      console.error(error);
+    }
+  }
+
+  async function fetchAllTasks(jwt = token) {
+    try {
+      const response = await axios.get(`${API_URL}/tasks`, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+        params: {
+          page: 0,
+          size: 1000,
+          sort: "createdAt,desc",
+        },
+      });
+
+      setAllTasks(response.data.content);
+    } catch (error) {
+      alert("Failed to load task counters");
+      console.error(error);
+    }
+  }
+
+
   async function createTask(e) {
     e.preventDefault();
 
@@ -135,6 +178,7 @@ function App() {
       setNewDescription("");
 
       await fetchTasks();
+      await fetchAllTasks();
     } catch (error) {
       alert("Failed to create task");
       console.error(error);
@@ -175,6 +219,7 @@ function App() {
 
       cancelEdit();
       await fetchTasks();
+      await fetchAllTasks();
     } catch (error) {
       alert("Failed to update task");
       console.error(error);
@@ -194,6 +239,7 @@ function App() {
       );
 
       await fetchTasks();
+      await fetchAllTasks();
     } catch (error) {
       alert("Failed to update task status");
       console.error(error);
@@ -215,6 +261,7 @@ function App() {
       });
 
       await fetchTasks();
+      await fetchAllTasks();
     } catch (error) {
       alert("Failed to delete task");
       console.error(error);
@@ -246,6 +293,7 @@ function App() {
     localStorage.removeItem("token");
     setToken("");
     setTasks([]);
+    setAllTasks([]);
     setLogin("");
     setPassword("");
     setName("");
@@ -255,10 +303,10 @@ function App() {
 
   function getStatusCount(status) {
     if (!status) {
-      return tasks.length;
+      return allTasks.length;
     }
 
-    return tasks.filter((task) => task.status === status).length;
+    return allTasks.filter((task) => task.status === status).length;
   }
 
   if (!token) {
