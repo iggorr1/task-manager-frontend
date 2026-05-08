@@ -383,9 +383,9 @@ function App() {
     return (
         <div className="auth-page">
           <div className="auth-card">
-            <div className="app-logo">TM</div>
+            <div className="app-logo">TF</div>
 
-            <h1>Task Manager</h1>
+            <h1>TaskFlow</h1>
             <p>{authMode === "login" ? "Login to your workspace" : "Create account"}</p>
 
             {message && (
@@ -471,9 +471,9 @@ function App() {
       <div className="workspace">
         <aside className="sidebar">
           <div className="sidebar-header">
-            <div className="app-logo small">TM</div>
+            <div className="app-logo small">TF</div>
             <div>
-              <h2>Task Manager</h2>
+              <h2>TaskFlow</h2>
               <p>Workspace</p>
             </div>
           </div>
@@ -540,7 +540,7 @@ function App() {
             <p className="section-title">Project</p>
 
             <a
-                href="https://github.com/iggorr1"
+                href="https://github.com/iggorr1/task-manager-frontend"
                 target="_blank"
                 rel="noreferrer"
             >

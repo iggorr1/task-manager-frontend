@@ -1,6 +1,6 @@
-# Task Flow — Frontend
+# TaskFlow — Frontend
 
-Task Flow is a simple task management web application built with React.  
+TaskFlow is a simple task management web application built with React.  
 It allows users to register, log in, create tasks, update task statuses, search, sort, and manage their personal task list.
 
 Live demo:
@@ -90,7 +90,7 @@ Planned screenshots:
 ## Project Structure
 
 ```text
-task-manager-frontend
+taskflow-frontend
 ├── public
 ├── src
 │   ├── App.jsx
