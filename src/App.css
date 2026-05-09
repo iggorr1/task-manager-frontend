@@ -456,14 +456,14 @@ form {
 }
 
 .pin-icon {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
   fill: none;
-  transform: rotate(-20deg);
+  transform: rotate(-18deg);
 }
 
 .pin-button.active .pin-icon,
