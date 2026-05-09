@@ -390,6 +390,12 @@ function App() {
   async function deleteTask(taskId) {
     clearMessage();
 
+    const shouldDelete = window.confirm("Delete this task?");
+
+    if (!shouldDelete) {
+      return;
+    }
+
     try {
       await axios.delete(`${API_URL}/tasks/${taskId}`, {
         headers: {
