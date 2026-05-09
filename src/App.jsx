@@ -118,6 +118,16 @@ function App() {
     }
   }
 
+  function sortPinnedFirst(taskList) {
+    return [...taskList].sort((a, b) => {
+      if (a.pinned === b.pinned) {
+        return 0;
+      }
+
+      return a.pinned ? -1 : 1;
+    });
+  }
+
   async function fetchTasks(
       jwt = token,
       status = selectedStatus,
@@ -146,7 +156,7 @@ function App() {
         params,
       });
 
-      setTasks(response.data.content);
+      setTasks(sortPinnedFirst(response.data.content));
     } catch (error) {
       showMessage("Failed to load tasks", "error");
       console.error("Request failed:", {
@@ -256,6 +266,32 @@ function App() {
       showMessage("Task updated.");
     } catch (error) {
       showMessage("Failed to update task", "error");
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    }
+  }
+
+  async function togglePinTask(taskId) {
+    clearMessage();
+
+    try {
+      await axios.patch(
+          `${API_URL}/tasks/${taskId}/pin`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+      );
+
+      await fetchTasks();
+      await fetchAllTasks();
+      showMessage("Task pin status updated.");
+    } catch (error) {
+      showMessage("Failed to update pin status", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
         message: error?.response?.data?.message || error?.message,
@@ -599,12 +635,22 @@ function App() {
                 </div>
             ) : (
                 tasks.map((task) => (
-                    <article className="task-card" key={task.id}>
+                    <article
+                        className={task.pinned ? "task-card pinned" : "task-card"}
+                        key={task.id}
+                    >
                       <div className="task-card-header">
                         <h3>{task.title}</h3>
-                        <span className={`status-badge ${task.status?.toLowerCase()}`}>
-                    {task.status || "NO_STATUS"}
-                  </span>
+
+                        <div className="task-badges">
+                          {task.pinned && (
+                              <span className="pinned-badge">Pinned</span>
+                          )}
+
+                          <span className={`status-badge ${task.status?.toLowerCase()}`}>
+                            {task.status || "NO_STATUS"}
+                          </span>
+                        </div>
                       </div>
 
                       {editingTaskId === task.id ? (
@@ -635,6 +681,13 @@ function App() {
                             </div>
 
                             <div className="task-actions">
+                              <button
+                                  className={task.pinned ? "pin-button active" : "pin-button"}
+                                  onClick={() => togglePinTask(task.id)}
+                              >
+                                {task.pinned ? "Unpin" : "Pin"}
+                              </button>
+
                               <button onClick={() => updateTaskStatus(task.id, "TODO")}>
                                 TODO
                               </button>
