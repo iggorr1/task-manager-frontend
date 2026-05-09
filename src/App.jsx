@@ -705,7 +705,13 @@ function App() {
                         key={task.id}
                     >
                       <div className="task-card-header">
-                        <h3>{task.title}</h3>
+                        <div className="task-title-block">
+                          <h3>{task.title}</h3>
+
+                          <span className={`status-badge ${task.status?.toLowerCase()}`}>
+                            {task.status || "NO_STATUS"}
+                          </span>
+                        </div>
 
                         <div className="task-badges">
                           <button
@@ -717,10 +723,6 @@ function App() {
                           >
                             <PinIcon filled={task.pinned} />
                           </button>
-
-                          <span className={`status-badge ${task.status?.toLowerCase()}`}>
-                            {task.status || "NO_STATUS"}
-                          </span>
                         </div>
                       </div>
 
