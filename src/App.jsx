@@ -277,7 +277,7 @@ function App() {
     clearMessage();
 
     try {
-      await axios.patch(
+      const response = await axios.patch(
           `${API_URL}/tasks/${taskId}/pin`,
           {},
           {
@@ -287,9 +287,21 @@ function App() {
           }
       );
 
-      await fetchTasks();
-      await fetchAllTasks();
-      showMessage("Task pin status updated.");
+      const updatedTask = response.data;
+
+      setTasks((prevTasks) =>
+        sortPinnedFirst(
+          prevTasks.map((task) =>
+            task.id === updatedTask.id ? updatedTask : task
+          )
+        )
+      );
+
+      setAllTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === updatedTask.id ? updatedTask : task
+        )
+      );
     } catch (error) {
       showMessage("Failed to update pin status", "error");
       console.error("Request failed:", {
