@@ -11,6 +11,21 @@ const STATUSES = [
   { label: "DONE", value: "DONE" },
 ];
 
+function PinIcon({ filled = false }) {
+  return (
+    <svg
+      className="pin-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        d="M16 3l5 5-3 1-4 4v5l-2 2-3-6-6-3 2-2h5l4-4 1-3z"
+        fill={filled ? "currentColor" : "none"}
+      />
+    </svg>
+  );
+}
+
 function App() {
   const [authMode, setAuthMode] = useState("login");
 
@@ -655,9 +670,15 @@ function App() {
                         <h3>{task.title}</h3>
 
                         <div className="task-badges">
-                          {task.pinned && (
-                              <span className="pinned-badge">Pinned</span>
-                          )}
+                          <button
+                              type="button"
+                              className={task.pinned ? "top-pin-button active" : "top-pin-button"}
+                              onClick={() => togglePinTask(task.id)}
+                              title={task.pinned ? "Unpin task" : "Pin task"}
+                              aria-label={task.pinned ? "Unpin task" : "Pin task"}
+                          >
+                            <PinIcon filled={task.pinned} />
+                          </button>
 
                           <span className={`status-badge ${task.status?.toLowerCase()}`}>
                             {task.status || "NO_STATUS"}
@@ -693,13 +714,6 @@ function App() {
                             </div>
 
                             <div className="task-actions">
-                              <button
-                                  className={task.pinned ? "pin-button active" : "pin-button"}
-                                  onClick={() => togglePinTask(task.id)}
-                              >
-                                {task.pinned ? "Unpin" : "Pin"}
-                              </button>
-
                               <button onClick={() => updateTaskStatus(task.id, "TODO")}>
                                 TODO
                               </button>
