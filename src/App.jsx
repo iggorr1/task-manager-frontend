@@ -11,6 +11,9 @@ const STATUSES = [
   { label: "DONE", value: "DONE" },
 ];
 
+const TITLE_MAX_LENGTH = 120;
+const DESCRIPTION_MAX_LENGTH = 255;
+
 function PinIcon({ filled = false }) {
   return (
     <svg
@@ -76,6 +79,32 @@ function App() {
   function clearMessage() {
     setMessage(null);
     setMessageType("success");
+  }
+
+  function getTaskValidationMessage(title, description) {
+    if (!title.trim()) {
+      return "Title is required";
+    }
+
+    if (title.length > TITLE_MAX_LENGTH) {
+      return `Title is too long. Maximum ${TITLE_MAX_LENGTH} characters.`;
+    }
+
+    if (description.length > DESCRIPTION_MAX_LENGTH) {
+      return `Description is too long. Maximum ${DESCRIPTION_MAX_LENGTH} characters.`;
+    }
+
+    return null;
+  }
+
+  function getRequestErrorMessage(error, fallbackMessage) {
+    const backendMessage = error?.response?.data?.message;
+
+    if (backendMessage) {
+      return backendMessage;
+    }
+
+    return fallbackMessage;
   }
 
   function useDemoAccount() {
@@ -212,8 +241,9 @@ function App() {
     e.preventDefault();
     clearMessage();
 
-    if (!newTitle.trim()) {
-      showMessage("Title is required", "error");
+    const validationMessage = getTaskValidationMessage(newTitle, newDescription);
+    if (validationMessage) {
+      showMessage(validationMessage, "error");
       return;
     }
 
@@ -238,7 +268,7 @@ function App() {
       await fetchAllTasks();
       showMessage("Task created.");
     } catch (error) {
-      showMessage("Failed to create task", "error");
+      showMessage(getRequestErrorMessage(error, "Failed to create task"), "error");
       console.error("Request failed:", {
         status: error?.response?.status,
         message: error?.response?.data?.message || error?.message,
@@ -260,8 +290,10 @@ function App() {
 
   async function saveEdit(taskId) {
     clearMessage();
-    if (!editTitle.trim()) {
-      showMessage("Title is required", "error");
+
+    const validationMessage = getTaskValidationMessage(editTitle, editDescription);
+    if (validationMessage) {
+      showMessage(validationMessage, "error");
       return;
     }
 
@@ -284,7 +316,7 @@ function App() {
       await fetchAllTasks();
       showMessage("Task updated.");
     } catch (error) {
-      showMessage("Failed to update task", "error");
+      showMessage(getRequestErrorMessage(error, "Failed to update task"), "error");
       console.error("Request failed:", {
         status: error?.response?.status,
         message: error?.response?.data?.message || error?.message,
@@ -644,6 +676,7 @@ function App() {
                   type="text"
                   placeholder="New task title"
                   value={newTitle}
+                  maxLength={TITLE_MAX_LENGTH}
                   onChange={(e) => setNewTitle(e.target.value)}
               />
 
@@ -651,6 +684,7 @@ function App() {
                   type="text"
                   placeholder="Description"
                   value={newDescription}
+                  maxLength={DESCRIPTION_MAX_LENGTH}
                   onChange={(e) => setNewDescription(e.target.value)}
               />
 
@@ -695,12 +729,14 @@ function App() {
                             <input
                                 type="text"
                                 value={editTitle}
+                                maxLength={TITLE_MAX_LENGTH}
                                 onChange={(e) => setEditTitle(e.target.value)}
                             />
 
                             <input
                                 type="text"
                                 value={editDescription}
+                                maxLength={DESCRIPTION_MAX_LENGTH}
                                 onChange={(e) => setEditDescription(e.target.value)}
                             />
 
