@@ -57,7 +57,6 @@ function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState(null);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("success");
 
@@ -388,15 +387,6 @@ function App() {
     }
   }
 
-  function startDelete(taskId) {
-    clearMessage();
-    setPendingDeleteTaskId(taskId);
-  }
-
-  function cancelDelete() {
-    setPendingDeleteTaskId(null);
-  }
-
   async function deleteTask(taskId) {
     clearMessage();
 
@@ -409,7 +399,6 @@ function App() {
 
       await fetchTasks();
       await fetchAllTasks();
-      setPendingDeleteTaskId(null);
       showMessage("Task deleted.");
     } catch (error) {
       showMessage("Failed to delete task", "error");
@@ -771,27 +760,13 @@ function App() {
                               </button>
 
                               <button onClick={() => startEdit(task)}>Edit</button>
-                              {pendingDeleteTaskId === task.id ? (
-                                  <>
-                                    <button
-                                        className="danger-button"
-                                        onClick={() => deleteTask(task.id)}
-                                    >
-                                      Confirm
-                                    </button>
 
-                                    <button onClick={cancelDelete}>
-                                      Cancel
-                                    </button>
-                                  </>
-                              ) : (
-                                  <button
-                                      className="danger-button"
-                                      onClick={() => startDelete(task.id)}
-                                  >
-                                    Delete
-                                  </button>
-                              )}
+                              <button
+                                  className="danger-button"
+                                  onClick={() => deleteTask(task.id)}
+                              >
+                                Delete
+                              </button>
                             </div>
                           </>
                       )}
