@@ -593,6 +593,56 @@ form {
   color: var(--muted);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.delete-modal {
+  width: 100%;
+  max-width: 380px;
+  padding: 22px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background: #242424;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+.delete-modal h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.delete-modal p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.delete-modal-actions .danger-button {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.delete-modal-actions .danger-button:hover {
+  background: rgba(248, 113, 113, 0.18);
+}
+
 /* RESPONSIVE */
 
 @media (max-width: 900px) {

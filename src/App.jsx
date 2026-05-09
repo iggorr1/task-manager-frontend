@@ -57,6 +57,7 @@ function App() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [taskIdToDelete, setTaskIdToDelete] = useState(null);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("success");
 
@@ -390,11 +391,10 @@ function App() {
   async function deleteTask(taskId) {
     clearMessage();
 
-    const shouldDelete = window.confirm("Delete this task?");
-
-    if (!shouldDelete) {
+    if (!taskId) {
       return;
     }
+
 
     try {
       await axios.delete(`${API_URL}/tasks/${taskId}`, {
@@ -405,6 +405,7 @@ function App() {
 
       await fetchTasks();
       await fetchAllTasks();
+      setTaskIdToDelete(null);
       showMessage("Task deleted.");
     } catch (error) {
       showMessage("Failed to delete task", "error");
@@ -448,6 +449,7 @@ function App() {
     setName("");
     setEmail("");
     cancelEdit();
+    setTaskIdToDelete(null);
     clearMessage();
   }
 
@@ -769,7 +771,7 @@ function App() {
 
                               <button
                                   className="danger-button"
-                                  onClick={() => deleteTask(task.id)}
+                                  onClick={() => setTaskIdToDelete(task.id)}
                               >
                                 Delete
                               </button>
@@ -780,6 +782,43 @@ function App() {
                 ))
             )}
           </section>
+
+          {taskIdToDelete && (
+              <div
+                  className="modal-backdrop"
+                  role="presentation"
+                  onClick={() => setTaskIdToDelete(null)}
+              >
+                <div
+                    className="delete-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="delete-modal-title"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 id="delete-modal-title">Delete task?</h3>
+                  <p>This action cannot be undone.</p>
+
+                  <div className="delete-modal-actions">
+                    <button
+                        type="button"
+                        onClick={() => setTaskIdToDelete(null)}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => deleteTask(taskIdToDelete)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+          )}
+
         </main>
       </div>
   );
