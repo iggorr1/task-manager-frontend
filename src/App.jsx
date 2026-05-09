@@ -13,6 +13,8 @@ const STATUSES = [
 
 const TITLE_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 255;
+const STATUS_STORAGE_KEY = "taskflow:selectedStatus";
+const SORT_STORAGE_KEY = "taskflow:sort";
 
 function PinIcon({ filled = false }) {
   return (
@@ -50,9 +52,13 @@ function App() {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
 
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState(
+      localStorage.getItem(STATUS_STORAGE_KEY) || ""
+  );
   const [searchTitle, setSearchTitle] = useState("");
-  const [sort, setSort] = useState("createdAt,desc");
+  const [sort, setSort] = useState(
+      localStorage.getItem(SORT_STORAGE_KEY) || "createdAt,desc"
+  );
 
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
@@ -418,6 +424,7 @@ function App() {
 
   function handleStatusFilter(status) {
     setSelectedStatus(status);
+    localStorage.setItem(STATUS_STORAGE_KEY, status);
     fetchTasks(token, status, searchTitle, sort);
   }
 
@@ -434,6 +441,7 @@ function App() {
   function handleSortChange(e) {
     const value = e.target.value;
     setSort(value);
+    localStorage.setItem(SORT_STORAGE_KEY, value);
     fetchTasks(token, selectedStatus, searchTitle, value);
   }
 
