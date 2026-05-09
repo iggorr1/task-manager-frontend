@@ -455,9 +455,25 @@ form {
   justify-content: flex-end;
 }
 
+.pin-icon {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  fill: none;
+  transform: rotate(-20deg);
+}
+
+.pin-button.active .pin-icon,
+.pinned-badge .pin-icon {
+  fill: currentColor;
+}
+
 .pinned-badge {
-  display: inline-flex;
-  padding: 5px 9px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   font-size: 10px;
   background: rgba(167, 139, 250, 0.12);
