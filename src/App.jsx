@@ -644,7 +644,7 @@ function App() {
             <p className="section-title">Project</p>
 
             <a
-                href="https://github.com/iggorr1/task-manager-frontend"
+                href="https://github.com/iggorr1"
                 target="_blank"
                 rel="noreferrer"
             >
