@@ -28,19 +28,24 @@ Password: demo123
 - JWT-based authentication
 - Personal task list for each user
 - Create, edit, delete tasks
+- Custom delete confirmation modal
+- Pin / unpin important tasks
+- Pinned tasks are displayed first
 - Change task status:
-    - TODO
-    - IN_PROGRESS
-    - DONE
+  - TODO
+  - IN_PROGRESS
+  - DONE
 - Filter tasks by status
 - Search tasks by title
 - Sort tasks by creation date or title
+- Persist selected filters and sorting after page refresh
 - Task counters by status
-- Inline success/error messages
-- Demo account shortcut
-- Mobile-friendly layout
-- Auto-load tasks after page refresh
 - Task creation date display
+- Frontend validation for task title and description length
+- Clear success/error messages
+- Demo account shortcut
+- Compact mobile-friendly layout
+- Production deployment with custom domain
 
 ---
 
@@ -75,7 +80,7 @@ Password: demo123
 
 ## Screenshots
 
-Screenshots will be added after the final UI polish.
+Screenshots will be added after final visual cleanup.
 
 Planned screenshots:
 
@@ -83,7 +88,9 @@ Planned screenshots:
 - Desktop dashboard
 - Mobile dashboard
 - Task cards with statuses
-- Filters and search
+- Pinned task state
+- Delete confirmation modal
+- Filters, search, and sorting
 
 ---
 
@@ -146,10 +153,17 @@ Network URL example:
 http://192.168.0.184:5173
 ```
 
-The frontend currently uses the production backend API:
+
+The frontend uses `VITE_API_URL` when provided and falls back to the production API:
 
 ```js
-const API_URL = "https://api.wwwho.lol";
+const API_URL = import.meta.env.VITE_API_URL || "https://api.wwwho.lol";
+```
+
+For local backend testing, create `.env.local`:
+
+```env
+VITE_API_URL=http://localhost:8080
 ```
 
 ---
@@ -229,22 +243,30 @@ cd ~/apps/task-flow
 
 ## Current Status
 
-The project currently includes:
+Implemented:
 
 - Working frontend
 - Working backend integration
 - Production deployment
 - Demo account
-- Mobile-friendly layout
+- Task CRUD UI
+- Task status workflow
+- Task pinning
+- Search, filtering, and sorting
+- Persisted filters and sorting
+- Custom delete confirmation modal
+- Long text wrapping fixes
+- Task input length validation on the frontend
+- Compact mobile layout
 - Docker-based deployment
 - Custom domain
 - Cloudflare Tunnel setup
 
 Planned improvements:
 
-- Better backend error messages
-- `/users/me` endpoint
+- Telegram task reminders
+- Better README screenshots
+- More polished empty/loading states
+- `/users/me` integration after backend support
 - Task priority
 - Due dates
-- Better README screenshots
-- More polished UI states
