@@ -438,6 +438,8 @@ form {
   margin: 0;
   font-size: 15px;
   font-weight: 650;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .task-card p {
@@ -445,6 +447,8 @@ form {
   color: var(--muted);
   line-height: 1.45;
   font-size: 13px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .task-badges {
@@ -550,6 +554,16 @@ form {
 
 .task-actions .danger-button:hover {
   background: rgba(248, 113, 113, 0.18);
+}
+
+.edit-task-form {
+  width: 100%;
+}
+
+.edit-task-form input {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .empty-state {
