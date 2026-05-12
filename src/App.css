@@ -377,7 +377,10 @@ form {
 .main {
   width: 100%;
   max-width: none;
+  min-height: 100vh;
   padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
 }
 
 .main-header {
@@ -544,14 +547,24 @@ form {
 }
 
 .pinned-badge {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
   font-size: 10px;
   background: rgba(167, 139, 250, 0.12);
   color: #c4b5fd;
   white-space: nowrap;
   border: 1px solid rgba(167, 139, 250, 0.22);
+}
+
+.pinned-badge .pin-icon {
+  width: 15px;
+  height: 15px;
 }
 
 
@@ -949,7 +962,7 @@ form {
 
 .credits-screenshot {
   max-width: 760px;
-  margin: 28px auto 0;
+  margin: auto auto 0;
   padding: 10px 14px;
   border-radius: 9px;
   background: #151515;
@@ -1238,7 +1251,8 @@ form {
     margin-bottom: 12px;
   }
 
-  .task-menu-button {
+  .task-menu-button,
+  .pinned-badge {
     width: 42px;
     min-width: 42px;
     height: 42px;
@@ -1280,7 +1294,7 @@ form {
   }
 
   .credits-screenshot {
-    margin-top: 20px;
+    margin: auto auto 0;
     padding: 9px 11px;
   }
 

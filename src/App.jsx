@@ -92,6 +92,24 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (openTaskMenuId === null) {
+      return;
+    }
+
+    function handleDocumentClick(event) {
+      if (!event.target.closest(".task-menu-wrapper")) {
+        closeTaskMenu();
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+    };
+  }, [openTaskMenuId]);
+
   function showMessage(text, type = "success") {
     setMessage(text);
     setMessageType(type);
