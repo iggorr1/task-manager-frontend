@@ -78,6 +78,8 @@ function App() {
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [reminderInputs, setReminderInputs] = useState({});
   const [reminderLoadingTaskId, setReminderLoadingTaskId] = useState(null);
+  const [openTaskMenuId, setOpenTaskMenuId] = useState(null);
+  const [openReminderTaskId, setOpenReminderTaskId] = useState(null);
 
   useEffect(() => {
     if (!token) {
@@ -296,6 +298,7 @@ function App() {
   }
 
   function startEdit(task) {
+    setOpenTaskMenuId(null);
     setEditingTaskId(task.id);
     setEditTitle(task.title || "");
     setEditDescription(task.description || "");
@@ -600,6 +603,7 @@ function App() {
         ...prevInputs,
         [taskId]: "",
       }));
+      setOpenReminderTaskId(null);
       showMessage("Reminder scheduled.");
     } catch (error) {
       showMessage(getRequestErrorMessage(error, "Failed to schedule reminder"), "error");
@@ -610,6 +614,22 @@ function App() {
     } finally {
       setReminderLoadingTaskId(null);
     }
+  }
+
+
+  function toggleTaskMenu(taskId) {
+    setOpenTaskMenuId((currentTaskId) =>
+      currentTaskId === taskId ? null : taskId
+    );
+  }
+
+  function closeTaskMenu() {
+    setOpenTaskMenuId(null);
+  }
+
+  function openReminderForTask(taskId) {
+    setOpenReminderTaskId(taskId);
+    setOpenTaskMenuId(null);
   }
 
   function handleLogout() {
@@ -628,6 +648,8 @@ function App() {
     setIsTelegramModalOpen(false);
     setReminderInputs({});
     setReminderLoadingTaskId(null);
+    setOpenTaskMenuId(null);
+    setOpenReminderTaskId(null);
     cancelEdit();
     setTaskIdToDelete(null);
     clearMessage();
@@ -928,15 +950,92 @@ function App() {
                         </div>
 
                         <div className="task-badges">
-                          <button
-                              type="button"
-                              className={task.pinned ? "top-pin-button active" : "top-pin-button"}
-                              onClick={() => togglePinTask(task.id)}
-                              title={task.pinned ? "Unpin task" : "Pin task"}
-                              aria-label={task.pinned ? "Unpin task" : "Pin task"}
-                          >
-                            <PinIcon filled={task.pinned} />
-                          </button>
+                          {task.pinned && (
+                              <span className="pinned-badge" title="Pinned task">
+                                <PinIcon filled />
+                              </span>
+                          )}
+
+                          <div className="task-menu-wrapper">
+                            <button
+                                type="button"
+                                className={openTaskMenuId === task.id ? "task-menu-button active" : "task-menu-button"}
+                                onClick={() => toggleTaskMenu(task.id)}
+                                aria-label="Open task actions"
+                                aria-expanded={openTaskMenuId === task.id}
+                            >
+                              ⋯
+                            </button>
+
+                            {openTaskMenuId === task.id && (
+                                <div className="task-actions-menu">
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                        togglePinTask(task.id);
+                                        closeTaskMenu();
+                                      }}
+                                  >
+                                    {task.pinned ? "Unpin" : "Pin"}
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                        updateTaskStatus(task.id, "TODO");
+                                        closeTaskMenu();
+                                      }}
+                                  >
+                                    Move to TODO
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                        updateTaskStatus(task.id, "IN_PROGRESS");
+                                        closeTaskMenu();
+                                      }}
+                                  >
+                                    Move to Progress
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                        updateTaskStatus(task.id, "DONE");
+                                        closeTaskMenu();
+                                      }}
+                                  >
+                                    Move to Done
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      onClick={() => openReminderForTask(task.id)}
+                                  >
+                                    Set reminder
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      onClick={() => startEdit(task)}
+                                  >
+                                    Edit
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      className="danger-menu-item"
+                                      onClick={() => {
+                                        setTaskIdToDelete(task.id);
+                                        closeTaskMenu();
+                                      }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -966,66 +1065,47 @@ function App() {
                             <p>{task.description || "No description"}</p>
 
                             <div className="task-meta">
-                              Created: {formatTaskDate(task.createdAt)}
-                            </div>
-
-                            <div className="task-reminder-panel">
-                              <div className="task-reminder-meta">
-                                <span>Reminder</span>
-                                <strong>
-                                  {task.reminderAt ? formatTaskDate(task.reminderAt) : "Not set"}
-                                </strong>
-                                {task.reminderSent && <em>Sent</em>}
-                              </div>
-
-                              <div className="task-reminder-controls">
-                                <input
-                                    type="datetime-local"
-                                    value={getReminderInputValue(task)}
-                                    onChange={(e) => updateReminderInput(task.id, e.target.value)}
-                                    disabled={reminderLoadingTaskId === task.id}
-                                />
-
-                                <button
-                                    type="button"
-                                    onClick={() => setTaskReminder(task.id)}
-                                    disabled={reminderLoadingTaskId === task.id}
-                                >
-                                  {reminderLoadingTaskId === task.id ? "Saving..." : "Set reminder"}
-                                </button>
-                              </div>
-
-                              {!telegramStatus.connected && (
-                                  <p className="task-reminder-hint">
-                                    Connect Telegram first to receive reminders.
-                                  </p>
+                              <span>Created: {formatTaskDate(task.createdAt)}</span>
+                              {task.reminderAt && (
+                                  <span>Reminder: {formatTaskDate(task.reminderAt)}</span>
                               )}
+                              {task.reminderSent && <span className="sent-meta">Reminder sent</span>}
                             </div>
 
-                            <div className="task-actions">
-                              <button onClick={() => updateTaskStatus(task.id, "TODO")}>
-                                TODO
-                              </button>
+                            {(task.reminderAt || openReminderTaskId === task.id) && (
+                                <div className="task-reminder-panel">
+                                  <div className="task-reminder-meta">
+                                    <span>Reminder</span>
+                                    <strong>
+                                      {task.reminderAt ? formatTaskDate(task.reminderAt) : "Not set"}
+                                    </strong>
+                                    {task.reminderSent && <em>Sent</em>}
+                                  </div>
 
-                              <button
-                                  onClick={() => updateTaskStatus(task.id, "IN_PROGRESS")}
-                              >
-                                Progress
-                              </button>
+                                  <div className="task-reminder-controls">
+                                    <input
+                                        type="datetime-local"
+                                        value={getReminderInputValue(task)}
+                                        onChange={(e) => updateReminderInput(task.id, e.target.value)}
+                                        disabled={reminderLoadingTaskId === task.id}
+                                    />
 
-                              <button onClick={() => updateTaskStatus(task.id, "DONE")}>
-                                Done
-                              </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTaskReminder(task.id)}
+                                        disabled={reminderLoadingTaskId === task.id}
+                                    >
+                                      {reminderLoadingTaskId === task.id ? "Saving..." : "Save reminder"}
+                                    </button>
+                                  </div>
 
-                              <button onClick={() => startEdit(task)}>Edit</button>
-
-                              <button
-                                  className="danger-button"
-                                  onClick={() => setTaskIdToDelete(task.id)}
-                              >
-                                Delete
-                              </button>
-                            </div>
+                                  {!telegramStatus.connected && (
+                                      <p className="task-reminder-hint">
+                                        Connect Telegram first to receive reminders.
+                                      </p>
+                                  )}
+                                </div>
+                            )}
                           </>
                       )}
                     </article>
