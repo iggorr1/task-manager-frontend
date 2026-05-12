@@ -16,6 +16,12 @@ const DESCRIPTION_MAX_LENGTH = 255;
 const STATUS_STORAGE_KEY = "taskflow:selectedStatus";
 const SORT_STORAGE_KEY = "taskflow:sort";
 
+const EMPTY_TELEGRAM_STATUS = {
+  connected: false,
+  telegramUsername: null,
+  connectedAt: null,
+};
+
 function PinIcon({ filled = false }) {
   return (
     <svg
@@ -66,6 +72,10 @@ function App() {
   const [taskIdToDelete, setTaskIdToDelete] = useState(null);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("success");
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState(EMPTY_TELEGRAM_STATUS);
+  const [telegramLink, setTelegramLink] = useState("");
+  const [telegramLoading, setTelegramLoading] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -74,6 +84,7 @@ function App() {
 
     fetchTasks(token, selectedStatus, searchTitle, sort);
     fetchAllTasks(token);
+    fetchTelegramStatus(token, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -445,6 +456,100 @@ function App() {
     fetchTasks(token, selectedStatus, searchTitle, value);
   }
 
+  async function fetchTelegramStatus(jwt = token, shouldShowMessage = false) {
+    if (!jwt) {
+      return;
+    }
+
+    setTelegramLoading(true);
+
+    try {
+      const response = await axios.get(`${API_URL}/telegram/status`, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      setTelegramStatus(response.data || EMPTY_TELEGRAM_STATUS);
+
+      if (shouldShowMessage) {
+        showMessage("Telegram status refreshed.");
+      }
+    } catch (error) {
+      showMessage("Failed to load Telegram status", "error");
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    } finally {
+      setTelegramLoading(false);
+    }
+  }
+
+  async function openTelegramSettings() {
+    setIsTelegramModalOpen(true);
+    setTelegramLink("");
+    await fetchTelegramStatus(token, false);
+  }
+
+  function closeTelegramSettings() {
+    setIsTelegramModalOpen(false);
+    setTelegramLink("");
+  }
+
+  async function createTelegramLink() {
+    clearMessage();
+    setTelegramLoading(true);
+
+    try {
+      const response = await axios.post(
+          `${API_URL}/telegram/link`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+      );
+
+      setTelegramLink(response.data.link);
+      showMessage("Telegram link created.");
+    } catch (error) {
+      showMessage("Failed to create Telegram link", "error");
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    } finally {
+      setTelegramLoading(false);
+    }
+  }
+
+  async function disconnectTelegram() {
+    clearMessage();
+    setTelegramLoading(true);
+
+    try {
+      await axios.delete(`${API_URL}/telegram/disconnect`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setTelegramStatus(EMPTY_TELEGRAM_STATUS);
+      setTelegramLink("");
+      showMessage("Telegram disconnected.");
+    } catch (error) {
+      showMessage("Failed to disconnect Telegram", "error");
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    } finally {
+      setTelegramLoading(false);
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("login");
@@ -456,6 +561,9 @@ function App() {
     setPassword("");
     setName("");
     setEmail("");
+    setTelegramStatus(EMPTY_TELEGRAM_STATUS);
+    setTelegramLink("");
+    setIsTelegramModalOpen(false);
     cancelEdit();
     setTaskIdToDelete(null);
     clearMessage();
@@ -640,6 +748,19 @@ function App() {
             </select>
           </div>
 
+          <div className="sidebar-section">
+            <p className="section-title">Integrations</p>
+
+            <button
+                type="button"
+                className="telegram-settings-button"
+                onClick={openTelegramSettings}
+            >
+              <span>Telegram Settings</span>
+              <span className={telegramStatus.connected ? "integration-dot connected" : "integration-dot"} />
+            </button>
+          </div>
+
           <div className="project-links">
             <p className="section-title">Project</p>
 
@@ -790,6 +911,95 @@ function App() {
                 ))
             )}
           </section>
+
+          <section className="credits-screenshot" aria-label="Project credits">
+            <p>
+              передаю привіт софії якби вона мені не написала я б не пофіксив баг зразу а на наступний день
+            </p>
+          </section>
+
+          {isTelegramModalOpen && (
+              <div
+                  className="modal-backdrop"
+                  role="presentation"
+                  onClick={closeTelegramSettings}
+              >
+                <div
+                    className="telegram-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="telegram-modal-title"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="telegram-modal-header">
+                    <div>
+                      <h3 id="telegram-modal-title">Telegram Settings</h3>
+                      <p>Connect your Telegram chat to receive task reminders.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="modal-close-button"
+                        onClick={closeTelegramSettings}
+                        aria-label="Close Telegram settings"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="telegram-status-card">
+                    <span>Status</span>
+                    <strong>{telegramStatus.connected ? "Connected" : "Not connected"}</strong>
+                    {telegramStatus.telegramUsername && (
+                        <p>@{telegramStatus.telegramUsername}</p>
+                    )}
+                    {telegramStatus.connectedAt && (
+                        <p>Connected: {formatTaskDate(telegramStatus.connectedAt)}</p>
+                    )}
+                  </div>
+
+                  {!telegramStatus.connected ? (
+                      <div className="telegram-connect-flow">
+                        <button
+                            type="button"
+                            onClick={createTelegramLink}
+                            disabled={telegramLoading}
+                        >
+                          {telegramLoading ? "Creating link..." : "Create Telegram link"}
+                        </button>
+
+                        {telegramLink && (
+                            <div className="telegram-link-card">
+                              <p>Open this link and press Start in Telegram:</p>
+                              <a href={telegramLink} target="_blank" rel="noreferrer">
+                                Open Telegram bot
+                              </a>
+                              <code>{telegramLink}</code>
+                            </div>
+                        )}
+                      </div>
+                  ) : (
+                      <button
+                          type="button"
+                          className="danger-button telegram-disconnect-button"
+                          onClick={disconnectTelegram}
+                          disabled={telegramLoading}
+                      >
+                        {telegramLoading ? "Disconnecting..." : "Disconnect Telegram"}
+                      </button>
+                  )}
+
+                  <button
+                      type="button"
+                      className="telegram-refresh-button"
+                      onClick={() => fetchTelegramStatus(token, true)}
+                      disabled={telegramLoading}
+                  >
+                    Refresh status
+                  </button>
+                </div>
+              </div>
+          )}
 
           {taskIdToDelete && (
               <div
