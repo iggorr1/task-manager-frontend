@@ -584,6 +584,79 @@ form {
   line-height: 1.3;
 }
 
+.task-reminder-panel {
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.task-reminder-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.task-reminder-meta span {
+  color: var(--muted-soft);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.task-reminder-meta strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.task-reminder-meta em {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--green);
+  background: rgba(125, 211, 167, 0.08);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.task-reminder-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.task-reminder-controls input {
+  min-width: 0;
+  font-size: 12px;
+}
+
+.task-reminder-controls button {
+  padding: 9px 10px;
+  color: #e6ddff;
+  background: #2b2834;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.task-reminder-controls button:hover {
+  background: #373144;
+}
+
+.task-reminder-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.task-reminder-hint {
+  margin: 9px 0 0 !important;
+  color: var(--muted-soft) !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
 .task-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1095,6 +1168,14 @@ form {
 
   .task-meta {
     margin-bottom: 12px;
+  }
+
+  .task-reminder-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .task-reminder-controls button {
+    width: 100%;
   }
 
   .task-actions {

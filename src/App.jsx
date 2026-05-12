@@ -76,6 +76,8 @@ function App() {
   const [telegramStatus, setTelegramStatus] = useState(EMPTY_TELEGRAM_STATUS);
   const [telegramLink, setTelegramLink] = useState("");
   const [telegramLoading, setTelegramLoading] = useState(false);
+  const [reminderInputs, setReminderInputs] = useState({});
+  const [reminderLoadingTaskId, setReminderLoadingTaskId] = useState(null);
 
   useEffect(() => {
     if (!token) {
@@ -550,6 +552,66 @@ function App() {
     }
   }
 
+  function updateReminderInput(taskId, value) {
+    setReminderInputs((prevInputs) => ({
+      ...prevInputs,
+      [taskId]: value,
+    }));
+  }
+
+  async function setTaskReminder(taskId) {
+    clearMessage();
+
+    const reminderValue = reminderInputs[taskId];
+
+    if (!reminderValue) {
+      showMessage("Choose reminder date and time first.", "error");
+      return;
+    }
+
+    const reminderDate = new Date(reminderValue);
+
+    if (Number.isNaN(reminderDate.getTime())) {
+      showMessage("Reminder date is invalid.", "error");
+      return;
+    }
+
+    if (reminderDate <= new Date()) {
+      showMessage("Reminder time should be in the future.", "error");
+      return;
+    }
+
+    setReminderLoadingTaskId(taskId);
+
+    try {
+      await axios.patch(
+          `${API_URL}/tasks/${taskId}/reminder`,
+          { reminderAt: reminderDate.toISOString() },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+      );
+
+      await fetchTasks();
+      await fetchAllTasks();
+      setReminderInputs((prevInputs) => ({
+        ...prevInputs,
+        [taskId]: "",
+      }));
+      showMessage("Reminder scheduled.");
+    } catch (error) {
+      showMessage(getRequestErrorMessage(error, "Failed to schedule reminder"), "error");
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    } finally {
+      setReminderLoadingTaskId(null);
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("login");
@@ -564,6 +626,8 @@ function App() {
     setTelegramStatus(EMPTY_TELEGRAM_STATUS);
     setTelegramLink("");
     setIsTelegramModalOpen(false);
+    setReminderInputs({});
+    setReminderLoadingTaskId(null);
     cancelEdit();
     setTaskIdToDelete(null);
     clearMessage();
@@ -575,6 +639,30 @@ function App() {
     }
 
     return allTasks.filter((task) => task.status === status).length;
+  }
+
+  function getReminderInputValue(task) {
+    if (reminderInputs[task.id] !== undefined) {
+      return reminderInputs[task.id];
+    }
+
+    return toDateTimeLocalValue(task.reminderAt);
+  }
+
+  function toDateTimeLocalValue(dateValue) {
+    if (!dateValue) {
+      return "";
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const pad = (value) => String(value).padStart(2, "0");
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 
   function formatTaskDate(dateValue) {
@@ -879,6 +967,39 @@ function App() {
 
                             <div className="task-meta">
                               Created: {formatTaskDate(task.createdAt)}
+                            </div>
+
+                            <div className="task-reminder-panel">
+                              <div className="task-reminder-meta">
+                                <span>Reminder</span>
+                                <strong>
+                                  {task.reminderAt ? formatTaskDate(task.reminderAt) : "Not set"}
+                                </strong>
+                                {task.reminderSent && <em>Sent</em>}
+                              </div>
+
+                              <div className="task-reminder-controls">
+                                <input
+                                    type="datetime-local"
+                                    value={getReminderInputValue(task)}
+                                    onChange={(e) => updateReminderInput(task.id, e.target.value)}
+                                    disabled={reminderLoadingTaskId === task.id}
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={() => setTaskReminder(task.id)}
+                                    disabled={reminderLoadingTaskId === task.id}
+                                >
+                                  {reminderLoadingTaskId === task.id ? "Saving..." : "Set reminder"}
+                                </button>
+                              </div>
+
+                              {!telegramStatus.connected && (
+                                  <p className="task-reminder-hint">
+                                    Connect Telegram first to receive reminders.
+                                  </p>
+                              )}
                             </div>
 
                             <div className="task-actions">
