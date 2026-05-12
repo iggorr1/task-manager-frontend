@@ -687,10 +687,18 @@ form {
 
 .task-reminder-meta {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.task-reminder-meta-text {
+  min-width: 0;
+  display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
 }
 
 .task-reminder-meta span {
@@ -704,6 +712,7 @@ form {
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .task-reminder-meta em {
@@ -713,6 +722,26 @@ form {
   background: rgba(125, 211, 167, 0.08);
   font-size: 10px;
   font-style: normal;
+}
+
+.reminder-panel-close {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted-soft);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.reminder-panel-close:hover {
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
 }
 
 .task-reminder-controls {

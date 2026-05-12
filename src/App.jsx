@@ -80,6 +80,7 @@ function App() {
   const [reminderLoadingTaskId, setReminderLoadingTaskId] = useState(null);
   const [openTaskMenuId, setOpenTaskMenuId] = useState(null);
   const [openReminderTaskId, setOpenReminderTaskId] = useState(null);
+  const [hiddenReminderTaskIds, setHiddenReminderTaskIds] = useState([]);
 
   useEffect(() => {
     if (!token) {
@@ -674,8 +675,20 @@ function App() {
   }
 
   function openReminderForTask(taskId) {
+    setHiddenReminderTaskIds((currentIds) =>
+      currentIds.filter((currentTaskId) => currentTaskId !== taskId)
+    );
     setOpenReminderTaskId(taskId);
     setOpenTaskMenuId(null);
+  }
+
+  function hideReminderPanel(taskId) {
+    setHiddenReminderTaskIds((currentIds) =>
+      currentIds.includes(taskId) ? currentIds : [...currentIds, taskId]
+    );
+    setOpenReminderTaskId((currentTaskId) =>
+      currentTaskId === taskId ? null : currentTaskId
+    );
   }
 
   function handleLogout() {
@@ -696,6 +709,7 @@ function App() {
     setReminderLoadingTaskId(null);
     setOpenTaskMenuId(null);
     setOpenReminderTaskId(null);
+    setHiddenReminderTaskIds([]);
     cancelEdit();
     setTaskIdToDelete(null);
     clearMessage();
@@ -1141,14 +1155,26 @@ function App() {
                               {task.reminderSent && <span className="sent-meta">Reminder sent</span>}
                             </div>
 
-                            {(task.reminderAt || openReminderTaskId === task.id) && (
+                            {(openReminderTaskId === task.id ||
+                                (task.reminderAt && !hiddenReminderTaskIds.includes(task.id))) && (
                                 <div className="task-reminder-panel">
                                   <div className="task-reminder-meta">
-                                    <span>Reminder</span>
-                                    <strong>
-                                      {task.reminderAt ? formatTaskDate(task.reminderAt) : "Not set"}
-                                    </strong>
-                                    {task.reminderSent && <em>Sent</em>}
+                                    <div className="task-reminder-meta-text">
+                                      <span>Reminder</span>
+                                      <strong>
+                                        {task.reminderAt ? formatTaskDate(task.reminderAt) : "Not set"}
+                                      </strong>
+                                      {task.reminderSent && <em>Sent</em>}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="reminder-panel-close"
+                                        onClick={() => hideReminderPanel(task.id)}
+                                        aria-label="Hide reminder panel"
+                                    >
+                                      ×
+                                    </button>
                                   </div>
 
                                   <div className="task-reminder-controls">
