@@ -573,24 +573,30 @@ function App() {
     }
   }
 
-  function updateReminderInput(taskId, value) {
+  function updateReminderInput(taskId, field, value) {
     setReminderInputs((prevInputs) => ({
       ...prevInputs,
-      [taskId]: value,
+      [taskId]: {
+        ...getReminderInputValueByTaskId(taskId),
+        ...prevInputs[taskId],
+        [field]: value,
+      },
     }));
   }
 
   async function setTaskReminder(taskId) {
     clearMessage();
 
-    const reminderValue = reminderInputs[taskId];
+    const reminderValue = getReminderInputValueByTaskId(taskId);
+    const reminderDateValue = reminderValue.date;
+    const reminderTimeValue = reminderValue.time;
 
-    if (!reminderValue) {
+    if (!reminderDateValue || !reminderTimeValue) {
       showMessage("Choose reminder date and time first.", "error");
       return;
     }
 
-    const reminderDate = new Date(reminderValue);
+    const reminderDate = new Date(`${reminderDateValue}T${reminderTimeValue}`);
 
     if (Number.isNaN(reminderDate.getTime())) {
       showMessage("Reminder date is invalid.", "error");
@@ -617,10 +623,11 @@ function App() {
 
       await fetchTasks();
       await fetchAllTasks();
-      setReminderInputs((prevInputs) => ({
-        ...prevInputs,
-        [taskId]: "",
-      }));
+      setReminderInputs((prevInputs) => {
+        const nextInputs = { ...prevInputs };
+        delete nextInputs[taskId];
+        return nextInputs;
+      });
       setOpenReminderTaskId(null);
       showMessage("Reminder scheduled.");
     } catch (error) {
@@ -683,26 +690,45 @@ function App() {
 
   function getReminderInputValue(task) {
     if (reminderInputs[task.id] !== undefined) {
-      return reminderInputs[task.id];
+      return {
+        date: reminderInputs[task.id]?.date || "",
+        time: reminderInputs[task.id]?.time || "",
+      };
     }
 
-    return toDateTimeLocalValue(task.reminderAt);
+    return toReminderInputValues(task.reminderAt);
   }
 
-  function toDateTimeLocalValue(dateValue) {
+  function getReminderInputValueByTaskId(taskId) {
+    if (reminderInputs[taskId] !== undefined) {
+      return {
+        date: reminderInputs[taskId]?.date || "",
+        time: reminderInputs[taskId]?.time || "",
+      };
+    }
+
+    const task = tasks.find((currentTask) => currentTask.id === taskId);
+
+    return toReminderInputValues(task?.reminderAt);
+  }
+
+  function toReminderInputValues(dateValue) {
     if (!dateValue) {
-      return "";
+      return { date: "", time: "" };
     }
 
     const date = new Date(dateValue);
 
     if (Number.isNaN(date.getTime())) {
-      return "";
+      return { date: "", time: "" };
     }
 
     const pad = (value) => String(value).padStart(2, "0");
 
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return {
+      date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    };
   }
 
   function formatTaskDate(dateValue) {
@@ -1101,12 +1127,25 @@ function App() {
                                   </div>
 
                                   <div className="task-reminder-controls">
-                                    <input
-                                        type="datetime-local"
-                                        value={getReminderInputValue(task)}
-                                        onChange={(e) => updateReminderInput(task.id, e.target.value)}
-                                        disabled={reminderLoadingTaskId === task.id}
-                                    />
+                                    <label className="reminder-field">
+                                      <span>Date</span>
+                                      <input
+                                          type="date"
+                                          value={getReminderInputValue(task).date}
+                                          onChange={(e) => updateReminderInput(task.id, "date", e.target.value)}
+                                          disabled={reminderLoadingTaskId === task.id}
+                                      />
+                                    </label>
+
+                                    <label className="reminder-field">
+                                      <span>Time</span>
+                                      <input
+                                          type="time"
+                                          value={getReminderInputValue(task).time}
+                                          onChange={(e) => updateReminderInput(task.id, "time", e.target.value)}
+                                          disabled={reminderLoadingTaskId === task.id}
+                                      />
+                                    </label>
 
                                     <button
                                         type="button"

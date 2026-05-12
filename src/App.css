@@ -716,8 +716,21 @@ form {
 
 .task-reminder-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) auto;
+  align-items: end;
   gap: 8px;
+}
+
+.reminder-field {
+  display: grid;
+  gap: 5px;
+}
+
+.reminder-field span {
+  color: var(--muted-soft);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .task-reminder-controls input {
