@@ -679,6 +679,7 @@ form {
 .task-reminder-panel {
   margin: 0 0 14px;
   padding: 13px;
+  overflow: hidden;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
@@ -716,7 +717,7 @@ form {
 
 .task-reminder-controls {
   display: grid;
-  grid-template-columns: minmax(138px, 1fr) minmax(104px, 0.72fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 0.7fr);
   align-items: end;
   gap: 10px;
 }
@@ -740,11 +741,11 @@ form {
 }
 
 .reminder-date-field input {
-  min-width: 138px;
+  min-width: 0;
 }
 
 .reminder-time-inputs {
-  min-width: 104px;
+  min-width: 0;
   height: 40px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -786,6 +787,9 @@ form {
 }
 
 .task-reminder-controls button {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 38px;
   padding: 9px 10px;
   color: #e6ddff;
   background: #2b2834;
@@ -1338,6 +1342,7 @@ form {
   }
 
   .task-reminder-controls button {
+    grid-column: 1;
     width: 100%;
   }
 
