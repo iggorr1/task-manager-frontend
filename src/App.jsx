@@ -11,6 +11,14 @@ const STATUSES = [
   { label: "DONE", value: "DONE" },
 ];
 
+const REMINDER_HOURS = Array.from({ length: 24 }, (_, index) =>
+  String(index).padStart(2, "0")
+);
+
+const REMINDER_MINUTES = Array.from({ length: 60 }, (_, index) =>
+  String(index).padStart(2, "0")
+);
+
 const TITLE_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 255;
 const STATUS_STORAGE_KEY = "taskflow:selectedStatus";
@@ -589,14 +597,17 @@ function App() {
 
     const reminderValue = getReminderInputValueByTaskId(taskId);
     const reminderDateValue = reminderValue.date;
-    const reminderTimeValue = reminderValue.time;
+    const reminderHourValue = reminderValue.hour;
+    const reminderMinuteValue = reminderValue.minute;
 
-    if (!reminderDateValue || !reminderTimeValue) {
+    if (!reminderDateValue || !reminderHourValue || !reminderMinuteValue) {
       showMessage("Choose reminder date and time first.", "error");
       return;
     }
 
-    const reminderDate = new Date(`${reminderDateValue}T${reminderTimeValue}`);
+    const reminderDate = new Date(
+      `${reminderDateValue}T${reminderHourValue}:${reminderMinuteValue}:00`
+    );
 
     if (Number.isNaN(reminderDate.getTime())) {
       showMessage("Reminder date is invalid.", "error");
@@ -689,45 +700,49 @@ function App() {
   }
 
   function getReminderInputValue(task) {
+    const savedValues = toReminderInputValues(task.reminderAt);
+
     if (reminderInputs[task.id] !== undefined) {
       return {
-        date: reminderInputs[task.id]?.date || "",
-        time: reminderInputs[task.id]?.time || "",
+        ...savedValues,
+        ...reminderInputs[task.id],
       };
     }
 
-    return toReminderInputValues(task.reminderAt);
+    return savedValues;
   }
 
   function getReminderInputValueByTaskId(taskId) {
+    const task = tasks.find((currentTask) => currentTask.id === taskId);
+    const savedValues = toReminderInputValues(task?.reminderAt);
+
     if (reminderInputs[taskId] !== undefined) {
       return {
-        date: reminderInputs[taskId]?.date || "",
-        time: reminderInputs[taskId]?.time || "",
+        ...savedValues,
+        ...reminderInputs[taskId],
       };
     }
 
-    const task = tasks.find((currentTask) => currentTask.id === taskId);
-
-    return toReminderInputValues(task?.reminderAt);
+    return savedValues;
   }
 
   function toReminderInputValues(dateValue) {
     if (!dateValue) {
-      return { date: "", time: "" };
+      return { date: "", hour: "", minute: "" };
     }
 
     const date = new Date(dateValue);
 
     if (Number.isNaN(date.getTime())) {
-      return { date: "", time: "" };
+      return { date: "", hour: "", minute: "" };
     }
 
     const pad = (value) => String(value).padStart(2, "0");
 
     return {
       date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-      time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+      hour: pad(date.getHours()),
+      minute: pad(date.getMinutes()),
     };
   }
 
@@ -1139,12 +1154,35 @@ function App() {
 
                                     <label className="reminder-field">
                                       <span>Time</span>
-                                      <input
-                                          type="time"
-                                          value={getReminderInputValue(task).time}
-                                          onChange={(e) => updateReminderInput(task.id, "time", e.target.value)}
-                                          disabled={reminderLoadingTaskId === task.id}
-                                      />
+                                      <div className="reminder-time-selects">
+                                        <select
+                                            value={getReminderInputValue(task).hour}
+                                            onChange={(e) => updateReminderInput(task.id, "hour", e.target.value)}
+                                            disabled={reminderLoadingTaskId === task.id}
+                                            aria-label="Reminder hour"
+                                        >
+                                          <option value="">HH</option>
+                                          {REMINDER_HOURS.map((hour) => (
+                                              <option key={hour} value={hour}>
+                                                {hour}
+                                              </option>
+                                          ))}
+                                        </select>
+
+                                        <select
+                                            value={getReminderInputValue(task).minute}
+                                            onChange={(e) => updateReminderInput(task.id, "minute", e.target.value)}
+                                            disabled={reminderLoadingTaskId === task.id}
+                                            aria-label="Reminder minute"
+                                        >
+                                          <option value="">MM</option>
+                                          {REMINDER_MINUTES.map((minute) => (
+                                              <option key={minute} value={minute}>
+                                                {minute}
+                                              </option>
+                                          ))}
+                                        </select>
+                                      </div>
                                     </label>
 
                                     <button

@@ -733,9 +733,16 @@ form {
   letter-spacing: 0.08em;
 }
 
-.task-reminder-controls input {
+.task-reminder-controls input,
+.task-reminder-controls select {
   min-width: 0;
   font-size: 12px;
+}
+
+.reminder-time-selects {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
 .task-reminder-controls button {
