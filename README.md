@@ -1,19 +1,26 @@
 # TaskFlow — Frontend
 
-TaskFlow is a simple task management web application built with React.  
-It allows users to register, log in, create tasks, update task statuses, search, sort, and manage their personal task list.
+React frontend for **TaskFlow**, a full-stack task management application with JWT authentication, task workflow statuses, pinned tasks, filtering, sorting, Telegram connection, and Telegram reminder scheduling.
 
-Live demo:
+The app is built as a portfolio-ready frontend that works with a Spring Boot backend and is deployed publicly through Docker, Nginx, and Cloudflare Tunnel.
+
+---
+
+## Live Demo
 
 ```text
 https://wwwho.lol
 ```
 
+Backend API:
+
+```text
+https://api.wwwho.lol
+```
+
 ---
 
 ## Demo Account
-
-You can try the app without creating a new account:
 
 ```text
 Login: demo
@@ -22,86 +29,98 @@ Password: demo123
 
 ---
 
-## Features
-
-- User registration and login
-- JWT-based authentication
-- Personal task list for each user
-- Create, edit, delete tasks
-- Custom delete confirmation modal
-- Pin / unpin important tasks
-- Pinned tasks are displayed first
-- Change task status:
-  - TODO
-  - IN_PROGRESS
-  - DONE
-- Filter tasks by status
-- Search tasks by title
-- Sort tasks by creation date or title
-- Persist selected filters and sorting after page refresh
-- Task counters by status
-- Task creation date display
-- Frontend validation for task title and description length
-- Clear success/error messages
-- Demo account shortcut
-- Compact mobile-friendly layout
-- Production deployment with custom domain
-
----
-
 ## Tech Stack
-
-### Frontend
 
 - React
 - Vite
 - Axios
 - CSS
+- Nginx
+- Docker
+- Cloudflare Tunnel
 
-### Backend API
+Backend stack used by the API:
 
 - Java
 - Spring Boot
 - Spring Security
 - JWT
-- Spring Data JPA
 - PostgreSQL
-
-### Deployment
-
-- Docker
-- Docker Compose
-- Nginx
-- Ubuntu Server
-- Cloudflare Tunnel
-- Custom domain
+- Telegram Bot API
 
 ---
 
-## Screenshots
+## Features
 
-Screenshots will be added after final visual cleanup.
+### Auth UI
 
-Planned screenshots:
+- Register new account
+- Login with JWT
+- Store token in `localStorage`
+- Logout
+- Demo account shortcut
 
-- Login screen with demo account
-- Desktop dashboard
-- Mobile dashboard
-- Task cards with statuses
-- Pinned task state
-- Delete confirmation modal
-- Filters, search, and sorting
+### Task Dashboard
+
+- Create tasks
+- Edit task title and description
+- Delete tasks with confirmation modal
+- View current user's tasks
+- Task status workflow:
+  - `TODO`
+  - `IN_PROGRESS`
+  - `DONE`
+- Pin/unpin important tasks
+- Pinned tasks are displayed first
+- Task counters by status
+- Search by title
+- Filter by status
+- Sort by creation date or title
+- Persist selected filter and sort in `localStorage`
+
+### Task Actions Menu
+
+Task card actions are grouped into a popup menu:
+
+- Pin / Unpin
+- Move to TODO
+- Move to Progress
+- Move to Done
+- Set reminder
+- Edit
+- Delete
+
+### Telegram Integration
+
+- Telegram Settings panel
+- Check Telegram connection status
+- Generate Telegram bot link
+- Open Telegram bot link
+- Refresh connection status
+- Disconnect Telegram
+
+### Reminder UI
+
+- Set reminder date
+- Set reminder time in 24-hour format
+- Send reminder request to backend
+- Show current reminder date/time
+- Show `Reminder sent` state
+- Hide reminder panel without deleting the reminder
 
 ---
 
 ## Project Structure
 
 ```text
-taskflow-frontend
+task-manager-frontend
 ├── public
+│   ├── favicon.png
+│   └── icons.svg
 ├── src
-│   ├── App.jsx
-│   ├── App.css
+│   ├── App.jsx      # Main application logic and UI
+│   ├── App.css      # Application styles
+│   ├── index.css
 │   └── main.jsx
 ├── Dockerfile
 ├── nginx.conf
@@ -111,18 +130,42 @@ taskflow-frontend
 
 ---
 
-## Backend Repository
+## Backend Integration
 
-This frontend works with a separate backend repository:
+The API base URL is configured through `VITE_API_URL`.
 
-```text
-https://github.com/iggorr1/task-flow-backend
+Current fallback in the app:
+
+```js
+const API_URL = import.meta.env.VITE_API_URL || "https://api.wwwho.lol";
 ```
 
-Backend API production URL:
+Production API:
 
 ```text
 https://api.wwwho.lol
+```
+
+Local backend example:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## Environment Variables
+
+Create `.env.local` for local development:
+
+```env
+VITE_API_URL=http://localhost:8080
+```
+
+For production builds, use:
+
+```env
+VITE_API_URL=https://api.wwwho.lol
 ```
 
 ---
@@ -135,42 +178,27 @@ Install dependencies:
 npm install
 ```
 
-Run local development server:
+Run development server:
 
 ```bash
-npm run dev -- --host 0.0.0.0
+npm run dev
 ```
 
-Local URL:
+Vite local URL:
 
 ```text
 http://localhost:5173
 ```
 
-Network URL example:
+Run on local network:
 
-```text
-http://192.168.0.184:5173
-```
-
-
-The frontend uses `VITE_API_URL` when provided and falls back to the production API:
-
-```js
-const API_URL = import.meta.env.VITE_API_URL || "https://api.wwwho.lol";
-```
-
-For local backend testing, create `.env.local`:
-
-```env
-VITE_API_URL=http://localhost:8080
+```bash
+npm run dev -- --host 0.0.0.0
 ```
 
 ---
 
-## Production Build
-
-Build the project:
+## Build
 
 ```bash
 npm run build
@@ -182,11 +210,17 @@ Preview production build locally:
 npm run preview
 ```
 
+Lint:
+
+```bash
+npm run lint
+```
+
 ---
 
 ## Docker
 
-The frontend is built with Vite and served by Nginx in production.
+The production image builds the Vite app and serves static files with Nginx.
 
 Build image:
 
@@ -200,11 +234,29 @@ Run container:
 docker run -p 8081:80 task-flow-frontend
 ```
 
+Open:
+
+```text
+http://localhost:8081
+```
+
 ---
 
 ## Deployment
 
-The production version runs on a home Ubuntu server using Docker Compose.
+Production deployment flow:
+
+```text
+GitHub
+↓
+git pull on Ubuntu server
+↓
+Docker Compose rebuild
+↓
+Nginx container serves frontend
+↓
+Cloudflare Tunnel exposes wwwho.lol
+```
 
 Production frontend:
 
@@ -218,20 +270,6 @@ Production API:
 https://api.wwwho.lol
 ```
 
-Server deployment flow:
-
-```text
-GitHub
-↓
-git pull on server
-↓
-Docker Compose rebuild
-↓
-Cloudflare Tunnel
-↓
-wwwho.lol
-```
-
 Deployment command on server:
 
 ```bash
@@ -241,32 +279,41 @@ cd ~/apps/task-flow
 
 ---
 
+## Screenshots To Add
+
+Recommended screenshots for the final portfolio README:
+
+- Login page with demo account
+- Main task dashboard
+- Task action menu
+- Telegram Settings modal
+- Reminder panel
+- Telegram reminder message
+- Mobile layout
+
+---
+
 ## Current Status
 
 Implemented:
 
-- Working frontend
-- Working backend integration
-- Production deployment
-- Demo account
+- Auth UI
+- JWT login flow
 - Task CRUD UI
-- Task status workflow
+- Status workflow
 - Task pinning
-- Search, filtering, and sorting
+- Task action menu
+- Search/filter/sort
 - Persisted filters and sorting
-- Custom delete confirmation modal
-- Long text wrapping fixes
-- Task input length validation on the frontend
-- Compact mobile layout
-- Docker-based deployment
-- Custom domain
-- Cloudflare Tunnel setup
+- Telegram settings UI
+- Telegram reminder scheduling UI
+- Docker + Nginx production setup
+- Public deployment on custom domain
 
-Planned improvements:
+Planned / possible improvements:
 
-- Telegram task reminders
-- Better README screenshots
-- More polished empty/loading states
-- `/users/me` integration after backend support
-- Task priority
-- Due dates
+- Add remove reminder action after backend endpoint is implemented
+- Add screenshots to README
+- Improve mobile reminder controls
+- Split large `App.jsx` into smaller components
+- Add better loading states and form-level error messages
