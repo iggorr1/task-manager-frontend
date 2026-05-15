@@ -88,6 +88,7 @@ function App() {
   const [openReminderTaskId, setOpenReminderTaskId] = useState(null);
   const [hiddenReminderTaskIds, setHiddenReminderTaskIds] = useState([]);
   const [activeView, setActiveView] = useState("tasks");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState("");
@@ -100,6 +101,7 @@ function App() {
     fetchTasks(token, selectedStatus, searchTitle, sort);
     fetchAllTasks(token);
     fetchTelegramStatus(token, false);
+    checkAdminAccess(token);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -165,6 +167,31 @@ function App() {
     };
   }
 
+  async function checkAdminAccess(jwt = token) {
+    if (!jwt) {
+      setIsAdmin(false);
+      return false;
+    }
+
+    try {
+      await axios.get(`${API_URL}/admin/stats`, getAuthConfig(jwt));
+      setIsAdmin(true);
+      return true;
+    } catch (error) {
+      const status = error?.response?.status;
+      setIsAdmin(false);
+
+      if (status !== 401 && status !== 403) {
+        console.error("Admin access check failed:", {
+          status,
+          message: error?.response?.data?.message || error?.message,
+        });
+      }
+
+      return false;
+    }
+  }
+
   function useDemoAccount() {
     clearMessage();
     setAuthMode("login");
@@ -214,6 +241,7 @@ function App() {
 
       await fetchTasks(jwt, selectedStatus, searchTitle, sort);
       await fetchAllTasks(jwt);
+      await checkAdminAccess(jwt);
       showMessage("Login successful.");
     } catch (error) {
       showMessage("Login failed", "error");
@@ -776,6 +804,7 @@ function App() {
     setOpenReminderTaskId(null);
     setHiddenReminderTaskIds([]);
     setActiveView("tasks");
+    setIsAdmin(false);
     setAdminData(EMPTY_ADMIN_DATA);
     setAdminLoading(false);
     setAdminError("");
@@ -1041,18 +1070,20 @@ function App() {
             </button>
           </div>
 
-          <div className="sidebar-section">
-            <p className="section-title">Admin</p>
+          {isAdmin && (
+              <div className="sidebar-section">
+                <p className="section-title">Admin</p>
 
-            <button
-                type="button"
-                className={activeView === "admin" ? "admin-panel-button active" : "admin-panel-button"}
-                onClick={openAdminPanel}
-            >
-              <span>Admin Panel</span>
-              <span className="admin-panel-dot" />
-            </button>
-          </div>
+                <button
+                    type="button"
+                    className={activeView === "admin" ? "admin-panel-button active" : "admin-panel-button"}
+                    onClick={openAdminPanel}
+                >
+                  <span>Admin Panel</span>
+                  <span className="admin-panel-dot" />
+                </button>
+              </div>
+          )}
 
           <div className="project-links">
             <p className="section-title">Project</p>
