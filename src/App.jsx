@@ -22,6 +22,12 @@ const EMPTY_TELEGRAM_STATUS = {
   connectedAt: null,
 };
 
+const EMPTY_ADMIN_DATA = {
+  stats: null,
+  users: [],
+  tasks: [],
+};
+
 function PinIcon({ filled = false }) {
   return (
     <svg
@@ -81,6 +87,10 @@ function App() {
   const [openTaskMenuId, setOpenTaskMenuId] = useState(null);
   const [openReminderTaskId, setOpenReminderTaskId] = useState(null);
   const [hiddenReminderTaskIds, setHiddenReminderTaskIds] = useState([]);
+  const [activeView, setActiveView] = useState("tasks");
+  const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState("");
 
   useEffect(() => {
     if (!token) {
@@ -145,6 +155,14 @@ function App() {
     }
 
     return fallbackMessage;
+  }
+
+  function getAuthConfig(jwt = token) {
+    return {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    };
   }
 
   function useDemoAccount() {
@@ -274,6 +292,46 @@ function App() {
         status: error?.response?.status,
         message: error?.response?.data?.message || error?.message,
       });
+    }
+  }
+
+  async function fetchAdminData(jwt = token) {
+    if (!jwt) {
+      return;
+    }
+
+    setAdminLoading(true);
+    setAdminError("");
+
+    try {
+      const [statsResponse, usersResponse, tasksResponse] = await Promise.all([
+        axios.get(`${API_URL}/admin/stats`, getAuthConfig(jwt)),
+        axios.get(`${API_URL}/admin/users`, getAuthConfig(jwt)),
+        axios.get(`${API_URL}/admin/tasks`, getAuthConfig(jwt)),
+      ]);
+
+      setAdminData({
+        stats: statsResponse.data,
+        users: usersResponse.data || [],
+        tasks: tasksResponse.data || [],
+      });
+    } catch (error) {
+      const status = error?.response?.status;
+      const errorMessage =
+        status === 403
+          ? "Admin access required."
+          : status === 401
+            ? "Login again to view admin panel."
+            : getRequestErrorMessage(error, "Failed to load admin data");
+
+      setAdminError(errorMessage);
+      setAdminData(EMPTY_ADMIN_DATA);
+      console.error("Request failed:", {
+        status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    } finally {
+      setAdminLoading(false);
     }
   }
 
@@ -458,6 +516,7 @@ function App() {
   }
 
   function handleStatusFilter(status) {
+    setActiveView("tasks");
     setSelectedStatus(status);
     localStorage.setItem(STATUS_STORAGE_KEY, status);
     fetchTasks(token, status, searchTitle, sort);
@@ -478,6 +537,12 @@ function App() {
     setSort(value);
     localStorage.setItem(SORT_STORAGE_KEY, value);
     fetchTasks(token, selectedStatus, searchTitle, value);
+  }
+
+  async function openAdminPanel() {
+    clearMessage();
+    setActiveView("admin");
+    await fetchAdminData(token);
   }
 
   async function fetchTelegramStatus(jwt = token, shouldShowMessage = false) {
@@ -710,6 +775,10 @@ function App() {
     setOpenTaskMenuId(null);
     setOpenReminderTaskId(null);
     setHiddenReminderTaskIds([]);
+    setActiveView("tasks");
+    setAdminData(EMPTY_ADMIN_DATA);
+    setAdminLoading(false);
+    setAdminError("");
     cancelEdit();
     setTaskIdToDelete(null);
     clearMessage();
@@ -782,6 +851,24 @@ function App() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function formatOptionalDate(dateValue) {
+    return dateValue ? formatTaskDate(dateValue) : "—";
+  }
+
+  function formatTelegramUsername(username) {
+    if (!username) {
+      return "—";
+    }
+
+    return username.startsWith("@") ? username : `@${username}`;
+  }
+
+  function getRecentAdminTasks() {
+    return [...adminData.tasks]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 8);
   }
 
   if (!token) {
@@ -897,7 +984,7 @@ function App() {
                 <button
                     key={status.label}
                     className={
-                      selectedStatus === status.value
+                      activeView === "tasks" && selectedStatus === status.value
                           ? "sidebar-item active"
                           : "sidebar-item"
                     }
@@ -954,6 +1041,19 @@ function App() {
             </button>
           </div>
 
+          <div className="sidebar-section">
+            <p className="section-title">Admin</p>
+
+            <button
+                type="button"
+                className={activeView === "admin" ? "admin-panel-button active" : "admin-panel-button"}
+                onClick={openAdminPanel}
+            >
+              <span>Admin Panel</span>
+              <span className="admin-panel-dot" />
+            </button>
+          </div>
+
           <div className="project-links">
             <p className="section-title">Project</p>
 
@@ -975,10 +1075,16 @@ function App() {
           <header className="main-header">
             <div>
               <h1>
-                {selectedStatus ? selectedStatus.replace("_", " ") : "All tasks"}
+                {activeView === "admin"
+                    ? "Admin Panel"
+                    : selectedStatus
+                      ? selectedStatus.replace("_", " ")
+                      : "All tasks"}
               </h1>
               <p>
-                {tasks.length} task{tasks.length === 1 ? "" : "s"} loaded
+                {activeView === "admin"
+                    ? "Read-only overview of users, tasks and Telegram links"
+                    : `${tasks.length} task${tasks.length === 1 ? "" : "s"} loaded`}
               </p>
             </div>
           </header>
@@ -989,6 +1095,156 @@ function App() {
               </div>
           )}
 
+          {activeView === "admin" ? (
+              <section className="admin-dashboard">
+                <div className="admin-toolbar">
+                  <div>
+                    <h2>System overview</h2>
+                    <p>Protected by backend <code>/admin/**</code> role checks.</p>
+                  </div>
+
+                  <button
+                      type="button"
+                      onClick={() => fetchAdminData(token)}
+                      disabled={adminLoading}
+                  >
+                    {adminLoading ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {adminError && (
+                    <div className="admin-error-card">
+                      <strong>{adminError}</strong>
+                      <p>Use an account with ADMIN role and login again after changing role in database.</p>
+                    </div>
+                )}
+
+                {adminLoading && !adminData.stats ? (
+                    <div className="admin-loading-card">Loading admin data...</div>
+                ) : (
+                    <>
+                      <div className="admin-stats-grid">
+                        <article className="admin-stat-card">
+                          <span>Total users</span>
+                          <strong>{adminData.stats?.totalUsers ?? 0}</strong>
+                        </article>
+
+                        <article className="admin-stat-card">
+                          <span>Total tasks</span>
+                          <strong>{adminData.stats?.totalTasks ?? 0}</strong>
+                        </article>
+
+                        <article className="admin-stat-card todo">
+                          <span>TODO</span>
+                          <strong>{adminData.stats?.todoTasks ?? 0}</strong>
+                        </article>
+
+                        <article className="admin-stat-card progress">
+                          <span>In progress</span>
+                          <strong>{adminData.stats?.inProgressTasks ?? 0}</strong>
+                        </article>
+
+                        <article className="admin-stat-card done">
+                          <span>Done</span>
+                          <strong>{adminData.stats?.doneTasks ?? 0}</strong>
+                        </article>
+                      </div>
+
+                      <section className="admin-panel-card">
+                        <div className="admin-panel-header">
+                          <div>
+                            <h3>Users</h3>
+                            <p>{adminData.users.length} account{adminData.users.length === 1 ? "" : "s"}</p>
+                          </div>
+                        </div>
+
+                        <div className="admin-table-wrapper">
+                          <table className="admin-table">
+                            <thead>
+                              <tr>
+                                <th>ID</th>
+                                <th>Login</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Telegram</th>
+                                <th>Chat ID</th>
+                                <th>Connected</th>
+                                <th>Created</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {adminData.users.length === 0 ? (
+                                  <tr>
+                                    <td colSpan="8" className="admin-empty-cell">No users loaded</td>
+                                  </tr>
+                              ) : (
+                                  adminData.users.map((user) => (
+                                      <tr key={user.id}>
+                                        <td>#{user.id}</td>
+                                        <td>
+                                          <strong>{user.login || "—"}</strong>
+                                          {user.name && <span>{user.name}</span>}
+                                        </td>
+                                        <td>{user.email || "—"}</td>
+                                        <td>
+                                          <span className={user.role === "ADMIN" ? "admin-role-badge" : "user-role-badge"}>
+                                            {user.role || "USER"}
+                                          </span>
+                                        </td>
+                                        <td>{formatTelegramUsername(user.telegramUsername)}</td>
+                                        <td>{user.telegramChatId || "—"}</td>
+                                        <td>{formatOptionalDate(user.telegramConnectedAt)}</td>
+                                        <td>{formatOptionalDate(user.createdAt)}</td>
+                                      </tr>
+                                  ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+
+                      <section className="admin-panel-card">
+                        <div className="admin-panel-header">
+                          <div>
+                            <h3>Recent tasks</h3>
+                            <p>Latest {Math.min(getRecentAdminTasks().length, 8)} of {adminData.tasks.length}</p>
+                          </div>
+                        </div>
+
+                        <div className="admin-task-list">
+                          {getRecentAdminTasks().length === 0 ? (
+                              <div className="admin-empty-card">No tasks loaded</div>
+                          ) : (
+                              getRecentAdminTasks().map((task) => (
+                                  <article className="admin-task-row" key={task.id}>
+                                    <div className="admin-task-main">
+                                      <div>
+                                        <span className="admin-task-id">#{task.id}</span>
+                                        <h4>{task.title || "Untitled task"}</h4>
+                                      </div>
+                                      <p>{task.description || "No description"}</p>
+                                    </div>
+
+                                    <div className="admin-task-meta-grid">
+                                      <span className={`status-badge ${task.status?.toLowerCase()}`}>
+                                        {task.status || "NO_STATUS"}
+                                      </span>
+                                      <span>Owner: {task.userLogin || `#${task.userId}`}</span>
+                                      <span>Created: {formatOptionalDate(task.createdAt)}</span>
+                                      <span>Reminder: {formatOptionalDate(task.reminderAt)}</span>
+                                      {task.pinned && <span className="admin-soft-badge">Pinned</span>}
+                                      {task.reminderSent && <span className="admin-soft-badge success">Reminder sent</span>}
+                                    </div>
+                                  </article>
+                              ))
+                          )}
+                        </div>
+                      </section>
+                    </>
+                )}
+              </section>
+          ) : (
+              <>
           <section className="create-panel">
             <form onSubmit={createTask}>
               <input
@@ -1257,6 +1513,9 @@ function App() {
               передаю привіт софії якби вона мені не написала я б не пофіксив баг зразу а на наступний день
             </p>
           </section>
+
+              </>
+          )}
 
           {isTelegramModalOpen && (
               <div
