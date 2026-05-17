@@ -171,6 +171,11 @@ function App() {
     return error?.response?.status === 401;
   }
 
+  function isSessionAuthError(error) {
+    const status = error?.response?.status;
+    return status === 401 || status === 403;
+  }
+
   function handleExpiredSession() {
     handleLogout();
     showMessage("Session expired. Please log in again.", "error");
@@ -306,7 +311,7 @@ function App() {
 
       setTasks(sortPinnedFirst(response.data.content));
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -334,7 +339,7 @@ function App() {
 
       setAllTasks(response.data.content);
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -423,7 +428,7 @@ function App() {
       await fetchAllTasks();
       showMessage("Task created.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -477,7 +482,7 @@ function App() {
       await fetchAllTasks();
       showMessage("Task updated.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -520,7 +525,7 @@ function App() {
         )
       );
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -551,7 +556,7 @@ function App() {
       await fetchAllTasks();
       showMessage("Task status updated.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -584,7 +589,7 @@ function App() {
       setTaskIdToDelete(null);
       showMessage("Task deleted.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -647,7 +652,7 @@ function App() {
         showMessage("Telegram status refreshed.");
       }
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -691,7 +696,7 @@ function App() {
       setTelegramLink(response.data.link);
       showMessage("Telegram link created.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -721,7 +726,7 @@ function App() {
       setTelegramLink("");
       showMessage("Telegram disconnected.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
@@ -815,7 +820,7 @@ function App() {
       setOpenReminderTaskId(null);
       showMessage("Reminder scheduled.");
     } catch (error) {
-      if (isUnauthorizedError(error)) {
+      if (isSessionAuthError(error)) {
         handleExpiredSession();
         return;
       }
