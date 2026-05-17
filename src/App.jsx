@@ -167,6 +167,15 @@ function App() {
     };
   }
 
+  function isUnauthorizedError(error) {
+    return error?.response?.status === 401;
+  }
+
+  function handleExpiredSession() {
+    handleLogout();
+    showMessage("Session expired. Please log in again.", "error");
+  }
+
   async function checkAdminAccess(jwt = token) {
     if (!jwt) {
       setIsAdmin(false);
@@ -181,7 +190,12 @@ function App() {
       const status = error?.response?.status;
       setIsAdmin(false);
 
-      if (status !== 401 && status !== 403) {
+      if (status === 401) {
+        handleExpiredSession();
+        return false;
+      }
+
+      if (status !== 403) {
         console.error("Admin access check failed:", {
           status,
           message: error?.response?.data?.message || error?.message,
@@ -292,6 +306,11 @@ function App() {
 
       setTasks(sortPinnedFirst(response.data.content));
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to load tasks", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -315,6 +334,11 @@ function App() {
 
       setAllTasks(response.data.content);
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to load task counters", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -344,6 +368,11 @@ function App() {
         tasks: tasksResponse.data || [],
       });
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       const status = error?.response?.status;
       const errorMessage =
         status === 403
@@ -394,6 +423,11 @@ function App() {
       await fetchAllTasks();
       showMessage("Task created.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage(getRequestErrorMessage(error, "Failed to create task"), "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -443,6 +477,11 @@ function App() {
       await fetchAllTasks();
       showMessage("Task updated.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage(getRequestErrorMessage(error, "Failed to update task"), "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -481,6 +520,11 @@ function App() {
         )
       );
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to update pin status", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -507,6 +551,11 @@ function App() {
       await fetchAllTasks();
       showMessage("Task status updated.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to update task status", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -535,6 +584,11 @@ function App() {
       setTaskIdToDelete(null);
       showMessage("Task deleted.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to delete task", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -593,6 +647,11 @@ function App() {
         showMessage("Telegram status refreshed.");
       }
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to load Telegram status", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -632,6 +691,11 @@ function App() {
       setTelegramLink(response.data.link);
       showMessage("Telegram link created.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to create Telegram link", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -657,6 +721,11 @@ function App() {
       setTelegramLink("");
       showMessage("Telegram disconnected.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage("Failed to disconnect Telegram", "error");
       console.error("Request failed:", {
         status: error?.response?.status,
@@ -746,6 +815,11 @@ function App() {
       setOpenReminderTaskId(null);
       showMessage("Reminder scheduled.");
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
       showMessage(getRequestErrorMessage(error, "Failed to schedule reminder"), "error");
       console.error("Request failed:", {
         status: error?.response?.status,
