@@ -114,18 +114,23 @@ Task card actions are grouped into a popup menu:
 
 ```text
 task-manager-frontend
-├── public
-│   ├── favicon.png
-│   └── icons.svg
-├── src
-│   ├── App.jsx      # Main application logic and UI
-│   ├── App.css      # Application styles
-│   ├── index.css
-│   └── main.jsx
-├── Dockerfile
-├── nginx.conf
-├── package.json
-└── README.md
+|-- public
+|   |-- favicon.png
+|   `-- icons.svg
+|-- src
+|   |-- api              # Axios API client
+|   |-- components       # Reusable UI components
+|   |-- constants        # Shared constants
+|   |-- pages            # Auth, tasks and admin screens
+|   |-- utils            # Formatting helpers
+|   |-- App.jsx          # App state and screen composition
+|   |-- App.css          # Application styles
+|   |-- index.css
+|   `-- main.jsx
+|-- Dockerfile
+|-- nginx.conf
+|-- package.json
+`-- README.md
 ```
 
 ---
@@ -248,13 +253,13 @@ Production deployment flow:
 
 ```text
 GitHub
-↓
+|
 git pull on Ubuntu server
-↓
+|
 Docker Compose rebuild
-↓
+|
 Nginx container serves frontend
-↓
+|
 Cloudflare Tunnel exposes wwwho.lol
 ```
 
@@ -312,8 +317,5 @@ Implemented:
 
 Planned / possible improvements:
 
-- Add remove reminder action after backend endpoint is implemented
 - Add screenshots to README
-- Improve mobile reminder controls
-- Split large `App.jsx` into smaller components
 - Add better loading states and form-level error messages
