@@ -86,7 +86,6 @@ function App() {
   const [reminderLoadingTaskId, setReminderLoadingTaskId] = useState(null);
   const [openTaskMenuId, setOpenTaskMenuId] = useState(null);
   const [openReminderTaskId, setOpenReminderTaskId] = useState(null);
-  const [hiddenReminderTaskIds, setHiddenReminderTaskIds] = useState([]);
   const [activeView, setActiveView] = useState("tasks");
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminData, setAdminData] = useState(EMPTY_ADMIN_DATA);
@@ -855,10 +854,6 @@ function App() {
       });
 
       setOpenReminderTaskId(null);
-      setHiddenReminderTaskIds((currentIds) =>
-          currentIds.filter((currentTaskId) => currentTaskId !== taskId)
-      );
-
       showMessage("Reminder deleted.");
     } catch (error) {
       if (isSessionAuthError(error)) {
@@ -887,19 +882,13 @@ function App() {
   }
 
   function openReminderForTask(taskId) {
-    setHiddenReminderTaskIds((currentIds) =>
-      currentIds.filter((currentTaskId) => currentTaskId !== taskId)
-    );
     setOpenReminderTaskId(taskId);
     setOpenTaskMenuId(null);
   }
 
   function hideReminderPanel(taskId) {
-    setHiddenReminderTaskIds((currentIds) =>
-      currentIds.includes(taskId) ? currentIds : [...currentIds, taskId]
-    );
     setOpenReminderTaskId((currentTaskId) =>
-      currentTaskId === taskId ? null : currentTaskId
+        currentTaskId === taskId ? null : currentTaskId
     );
   }
 
@@ -921,7 +910,6 @@ function App() {
     setReminderLoadingTaskId(null);
     setOpenTaskMenuId(null);
     setOpenReminderTaskId(null);
-    setHiddenReminderTaskIds([]);
     setActiveView("tasks");
     setIsAdmin(false);
     setAdminData(EMPTY_ADMIN_DATA);
@@ -1561,8 +1549,7 @@ function App() {
                               {task.reminderSent && <span className="sent-meta">Reminder sent</span>}
                             </div>
 
-                            {(openReminderTaskId === task.id ||
-                                (task.reminderAt && !hiddenReminderTaskIds.includes(task.id))) && (
+                            {openReminderTaskId === task.id && (
                                 <div className="task-reminder-panel">
                                   <div className="task-reminder-meta">
                                     <div className="task-reminder-meta-text">
