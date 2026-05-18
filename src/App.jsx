@@ -835,6 +835,46 @@ function App() {
     }
   }
 
+  async function deleteTaskReminder(taskId) {
+    clearMessage();
+    setReminderLoadingTaskId(taskId);
+
+    try {
+      await axios.delete(
+          `${API_URL}/tasks/${taskId}/reminder`,
+          getAuthConfig()
+      );
+
+      await fetchTasks();
+      await fetchAllTasks();
+
+      setReminderInputs((prevInputs) => {
+        const nextInputs = { ...prevInputs };
+        delete nextInputs[taskId];
+        return nextInputs;
+      });
+
+      setOpenReminderTaskId(null);
+      setHiddenReminderTaskIds((currentIds) =>
+          currentIds.filter((currentTaskId) => currentTaskId !== taskId)
+      );
+
+      showMessage("Reminder deleted.");
+    } catch (error) {
+      if (isSessionAuthError(error)) {
+        handleExpiredSession();
+        return;
+      }
+
+      showMessage(getRequestErrorMessage(error, "Failed to delete reminder"), "error");
+      console.error("Request failed:", {
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+    } finally {
+      setReminderLoadingTaskId(null);
+    }
+  }
 
   function toggleTaskMenu(taskId) {
     setOpenTaskMenuId((currentTaskId) =>
@@ -1602,6 +1642,17 @@ function App() {
                                     >
                                       {reminderLoadingTaskId === task.id ? "Saving..." : "Save reminder"}
                                     </button>
+
+                                    {task.reminderAt && (
+                                        <button
+                                            type="button"
+                                            className="reminder-delete-button"
+                                            onClick={() => deleteTaskReminder(task.id)}
+                                            disabled={reminderLoadingTaskId === task.id}
+                                        >
+                                          {reminderLoadingTaskId === task.id ? "Deleting..." : "Delete reminder"}
+                                        </button>
+                                    )}
                                   </div>
 
                                   {!telegramStatus.connected && (

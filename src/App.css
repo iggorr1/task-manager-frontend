@@ -835,6 +835,15 @@ form {
   opacity: 0.65;
 }
 
+.task-reminder-controls .reminder-delete-button {
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.task-reminder-controls .reminder-delete-button:hover {
+  background: rgba(248, 113, 113, 0.16);
+}
+
 .task-reminder-hint {
   margin: 9px 0 0 !important;
   color: var(--muted-soft) !important;
