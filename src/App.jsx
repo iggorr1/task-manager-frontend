@@ -1,51 +1,28 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import AuthPage from "./pages/AuthPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import TasksPage from "./pages/TasksPage";
+import Sidebar from "./components/layout/Sidebar";
+import TelegramSettingsModal from "./components/telegram/TelegramSettingsModal";
+import DeleteTaskModal from "./components/tasks/DeleteTaskModal";
+import {
+  adminApi,
+  authApi,
+  getRequestErrorMessage,
+  isSessionAuthError,
+  isUnauthorizedError,
+  taskApi,
+  telegramApi,
+} from "./api/taskFlowApi";
+import {
+  DESCRIPTION_MAX_LENGTH,
+  EMPTY_ADMIN_DATA,
+  EMPTY_TELEGRAM_STATUS,
+  STATUS_STORAGE_KEY,
+  SORT_STORAGE_KEY,
+  TITLE_MAX_LENGTH,
+} from "./constants/taskFlow";
 import "./App.css";
-
-const API_URL = import.meta.env.VITE_API_URL || "https://api.wwwho.lol";
-
-const STATUSES = [
-  { label: "All tasks", value: "" },
-  { label: "TODO", value: "TODO" },
-  { label: "IN_PROGRESS", value: "IN_PROGRESS" },
-  { label: "DONE", value: "DONE" },
-];
-
-const TITLE_MAX_LENGTH = 120;
-const DESCRIPTION_MAX_LENGTH = 255;
-const STATUS_STORAGE_KEY = "taskflow:selectedStatus";
-const SORT_STORAGE_KEY = "taskflow:sort";
-
-const EMPTY_TELEGRAM_STATUS = {
-  connected: false,
-  telegramUsername: null,
-  connectedAt: null,
-};
-
-const EMPTY_ADMIN_DATA = {
-  stats: null,
-  users: [],
-  tasks: [],
-};
-
-function PinIcon({ filled = false }) {
-  return (
-    <svg
-      className="pin-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        d="M16 3l5 5-3 1-4 4v5l-2 2-3-6-6-3 2-2h5l4-4 1-3z"
-        fill={filled ? "currentColor" : "none"}
-      />
-      <path
-        d="M9.0 15.0L5.2 21"
-        fill="none"
-      />
-    </svg>
-  );
-}
 
 function App() {
   const [authMode, setAuthMode] = useState("login");
@@ -148,33 +125,6 @@ function App() {
     return null;
   }
 
-  function getRequestErrorMessage(error, fallbackMessage) {
-    const backendMessage = error?.response?.data?.message;
-
-    if (backendMessage) {
-      return backendMessage;
-    }
-
-    return fallbackMessage;
-  }
-
-  function getAuthConfig(jwt = token) {
-    return {
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-      },
-    };
-  }
-
-  function isUnauthorizedError(error) {
-    return error?.response?.status === 401;
-  }
-
-  function isSessionAuthError(error) {
-    const status = error?.response?.status;
-    return status === 401 || status === 403;
-  }
-
   function handleExpiredSession() {
     handleLogout();
     showMessage("Session expired. Please log in again.", "error");
@@ -187,7 +137,7 @@ function App() {
     }
 
     try {
-      await axios.get(`${API_URL}/admin/stats`, getAuthConfig(jwt));
+      await adminApi.getStats(jwt);
       setIsAdmin(true);
       return true;
     } catch (error) {
@@ -222,7 +172,7 @@ function App() {
     clearMessage();
 
     try {
-      await axios.post(`${API_URL}/users/register`, {
+      await authApi.register({
         name,
         email,
         login,
@@ -245,7 +195,7 @@ function App() {
     clearMessage();
 
     try {
-      const response = await axios.post(`${API_URL}/users/login`, {
+      const response = await authApi.login({
         login,
         password,
       });
@@ -301,12 +251,7 @@ function App() {
         params.title = title.trim();
       }
 
-      const response = await axios.get(`${API_URL}/tasks`, {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-        params,
-      });
+      const response = await taskApi.getTasks(jwt, params);
 
       setTasks(sortPinnedFirst(response.data.content));
     } catch (error) {
@@ -325,15 +270,10 @@ function App() {
 
   async function fetchAllTasks(jwt = token) {
     try {
-      const response = await axios.get(`${API_URL}/tasks`, {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-        params: {
-          page: 0,
-          size: 1000,
-          sort: "createdAt,desc",
-        },
+      const response = await taskApi.getTasks(jwt, {
+        page: 0,
+        size: 1000,
+        sort: "createdAt,desc",
       });
 
       setAllTasks(response.data.content);
@@ -361,9 +301,9 @@ function App() {
 
     try {
       const [statsResponse, usersResponse, tasksResponse] = await Promise.all([
-        axios.get(`${API_URL}/admin/stats`, getAuthConfig(jwt)),
-        axios.get(`${API_URL}/admin/users`, getAuthConfig(jwt)),
-        axios.get(`${API_URL}/admin/tasks`, getAuthConfig(jwt)),
+        adminApi.getStats(jwt),
+        adminApi.getUsers(jwt),
+        adminApi.getTasks(jwt),
       ]);
 
       setAdminData({
@@ -407,18 +347,10 @@ function App() {
     }
 
     try {
-      await axios.post(
-          `${API_URL}/tasks`,
-          {
-            title: newTitle,
-            description: newDescription,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      await taskApi.createTask(token, {
+        title: newTitle,
+        description: newDescription,
+      });
 
       setNewTitle("");
       setNewDescription("");
@@ -463,18 +395,10 @@ function App() {
     }
 
     try {
-      await axios.put(
-          `${API_URL}/tasks/${taskId}`,
-          {
-            title: editTitle,
-            description: editDescription,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      await taskApi.updateTask(token, taskId, {
+        title: editTitle,
+        description: editDescription,
+      });
 
       cancelEdit();
       await fetchTasks();
@@ -498,15 +422,7 @@ function App() {
     clearMessage();
 
     try {
-      const response = await axios.patch(
-          `${API_URL}/tasks/${taskId}/pin`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      const response = await taskApi.togglePin(token, taskId);
 
       const updatedTask = response.data;
 
@@ -541,15 +457,7 @@ function App() {
     clearMessage();
 
     try {
-      await axios.patch(
-          `${API_URL}/tasks/${taskId}/status`,
-          { status },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      await taskApi.updateStatus(token, taskId, { status });
 
       await fetchTasks();
       await fetchAllTasks();
@@ -577,11 +485,7 @@ function App() {
 
 
     try {
-      await axios.delete(`${API_URL}/tasks/${taskId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await taskApi.deleteTask(token, taskId);
 
       await fetchTasks();
       await fetchAllTasks();
@@ -639,11 +543,7 @@ function App() {
     setTelegramLoading(true);
 
     try {
-      const response = await axios.get(`${API_URL}/telegram/status`, {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      });
+      const response = await telegramApi.getStatus(jwt);
 
       setTelegramStatus(response.data || EMPTY_TELEGRAM_STATUS);
 
@@ -682,15 +582,7 @@ function App() {
     setTelegramLoading(true);
 
     try {
-      const response = await axios.post(
-          `${API_URL}/telegram/link`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      const response = await telegramApi.createLink(token);
 
       setTelegramLink(response.data.link);
       showMessage("Telegram link created.");
@@ -715,11 +607,7 @@ function App() {
     setTelegramLoading(true);
 
     try {
-      await axios.delete(`${API_URL}/telegram/disconnect`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await telegramApi.disconnect(token);
 
       setTelegramStatus(EMPTY_TELEGRAM_STATUS);
       setTelegramLink("");
@@ -799,15 +687,9 @@ function App() {
     setReminderLoadingTaskId(taskId);
 
     try {
-      await axios.patch(
-          `${API_URL}/tasks/${taskId}/reminder`,
-          { reminderAt: reminderDate.toISOString() },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      await taskApi.setReminder(token, taskId, {
+        reminderAt: reminderDate.toISOString(),
+      });
 
       await fetchTasks();
       await fetchAllTasks();
@@ -839,10 +721,7 @@ function App() {
     setReminderLoadingTaskId(taskId);
 
     try {
-      await axios.delete(
-          `${API_URL}/tasks/${taskId}/reminder`,
-          getAuthConfig()
-      );
+      await taskApi.deleteReminder(token, taskId);
 
       await fetchTasks();
       await fetchAllTasks();
@@ -975,32 +854,6 @@ function App() {
     };
   }
 
-  function formatTaskDate(dateValue) {
-    if (!dateValue) {
-      return "Unknown date";
-    }
-
-    return new Date(dateValue).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function formatOptionalDate(dateValue) {
-    return dateValue ? formatTaskDate(dateValue) : "—";
-  }
-
-  function formatTelegramUsername(username) {
-    if (!username) {
-      return "—";
-    }
-
-    return username.startsWith("@") ? username : `@${username}`;
-  }
-
   function getRecentAdminTasks() {
     return [...adminData.tasks]
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -1009,790 +862,134 @@ function App() {
 
   if (!token) {
     return (
-        <div className="auth-page">
-          <div className="auth-card">
-            <div className="app-logo">TF</div>
-
-            <h1>TaskFlow</h1>
-            <p>{authMode === "login" ? "Login to your workspace" : "Create account"}</p>
-
-            {message && (
-                <div className={`message-banner ${messageType}`}>
-                  {message}
-                </div>
-            )}
-
-            <form onSubmit={authMode === "login" ? handleLogin : handleRegister}>
-              {authMode === "register" && (
-                  <>
-                    <input
-                        type="text"
-                        name="name"
-                        autoComplete="name"
-                        placeholder="Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-
-                    <input
-                        type="email"
-                        name="email"
-                        autoComplete="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </>
-              )}
-
-              <input
-                  type="text"
-                  name="username"
-                  autoComplete="username"
-                  placeholder="Login"
-                  value={login}
-                  onChange={(e) => setLogin(e.target.value)}
-              />
-
-              <input
-                  type="password"
-                  name="password"
-                  autoComplete={authMode === "login" ? "current-password" : "new-password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-              />
-
-              <button type="submit">
-                {authMode === "login" ? "Login" : "Register"}
-              </button>
-            </form>
-
-            <div className="demo-account">
-              <div>
-                <strong>Demo account</strong>
-                <p>Login: demo · Password: demo123</p>
-              </div>
-
-              <button
-                  type="button"
-                  onClick={useDemoAccount}
-              >
-                Use demo account
-              </button>
-            </div>
-
-            <button
-                className="auth-switch-button"
-                onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
-            >
-              {authMode === "login"
-                  ? "No account? Register"
-                  : "Already have account? Login"}
-            </button>
-          </div>
-        </div>
+      <AuthPage
+        authMode={authMode}
+        email={email}
+        login={login}
+        message={message}
+        messageType={messageType}
+        name={name}
+        password={password}
+        onAuthModeChange={setAuthMode}
+        onEmailChange={setEmail}
+        onLogin={handleLogin}
+        onLoginChange={setLogin}
+        onNameChange={setName}
+        onPasswordChange={setPassword}
+        onRegister={handleRegister}
+        onUseDemoAccount={useDemoAccount}
+      />
     );
   }
 
+  const pageTitle = activeView === "admin"
+    ? "Admin Panel"
+    : selectedStatus
+      ? selectedStatus.replace("_", " ")
+      : "All tasks";
+
+  const pageSubtitle = activeView === "admin"
+    ? "Read-only overview of users, tasks and Telegram links"
+    : tasks.length + " task" + (tasks.length === 1 ? "" : "s") + " loaded";
+
   return (
-      <div className="workspace">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <div className="app-logo small">TF</div>
-            <div>
-              <h2>TaskFlow</h2>
-              <p>Workspace</p>
-            </div>
+    <div className="workspace">
+      <Sidebar
+        activeView={activeView}
+        currentLogin={currentLogin}
+        isAdmin={isAdmin}
+        searchTitle={searchTitle}
+        selectedStatus={selectedStatus}
+        sort={sort}
+        telegramConnected={telegramStatus.connected}
+        getStatusCount={getStatusCount}
+        onAdminOpen={openAdminPanel}
+        onClearSearch={clearSearch}
+        onLogout={handleLogout}
+        onSearch={handleSearch}
+        onSearchTitleChange={setSearchTitle}
+        onSortChange={handleSortChange}
+        onStatusFilter={handleStatusFilter}
+        onTelegramOpen={openTelegramSettings}
+      />
+
+      <main className="main">
+        <header className="main-header">
+          <div>
+            <h1>{pageTitle}</h1>
+            <p>{pageSubtitle}</p>
           </div>
+        </header>
 
-          {currentLogin && (
-              <div className="user-badge">
-                <span>Logged in as</span>
-                <strong>{currentLogin}</strong>
-              </div>
-          )}
-
-          <nav className="sidebar-section">
-            <p className="section-title">Views</p>
-
-            {STATUSES.map((status) => (
-                <button
-                    key={status.label}
-                    className={
-                      activeView === "tasks" && selectedStatus === status.value
-                          ? "sidebar-item active"
-                          : "sidebar-item"
-                    }
-                    onClick={() => handleStatusFilter(status.value)}
-                >
-                  <span>{status.label}</span>
-                  <span className="count">{getStatusCount(status.value)}</span>
-                </button>
-            ))}
-          </nav>
-
-          <div className="sidebar-section">
-            <p className="section-title">Search</p>
-
-            <form className="sidebar-form" onSubmit={handleSearch}>
-              <input
-                  type="text"
-                  placeholder="Search by title..."
-                  value={searchTitle}
-                  onChange={(e) => setSearchTitle(e.target.value)}
-              />
-
-              <button type="submit">Search</button>
-
-              {searchTitle && (
-                  <button type="button" onClick={clearSearch}>
-                    Clear
-                  </button>
-              )}
-            </form>
+        {message && (
+          <div className={"message-banner " + messageType}>
+            {message}
           </div>
+        )}
 
-          <div className="sidebar-section">
-            <p className="section-title">Sort</p>
+        {activeView === "admin" ? (
+          <AdminDashboard
+            adminData={adminData}
+            adminError={adminError}
+            adminLoading={adminLoading}
+            getRecentAdminTasks={getRecentAdminTasks}
+            onRefresh={() => fetchAdminData(token)}
+          />
+        ) : (
+          <TasksPage
+            editDescription={editDescription}
+            editTitle={editTitle}
+            editingTaskId={editingTaskId}
+            newDescription={newDescription}
+            newTitle={newTitle}
+            openReminderTaskId={openReminderTaskId}
+            openTaskMenuId={openTaskMenuId}
+            reminderLoadingTaskId={reminderLoadingTaskId}
+            tasks={tasks}
+            telegramConnected={telegramStatus.connected}
+            cancelEdit={cancelEdit}
+            closeTaskMenu={closeTaskMenu}
+            createTask={createTask}
+            deleteTaskReminder={deleteTaskReminder}
+            getReminderInputValue={getReminderInputValue}
+            hideReminderPanel={hideReminderPanel}
+            openReminderForTask={openReminderForTask}
+            saveEdit={saveEdit}
+            setEditDescription={setEditDescription}
+            setEditTitle={setEditTitle}
+            setNewDescription={setNewDescription}
+            setNewTitle={setNewTitle}
+            setTaskIdToDelete={setTaskIdToDelete}
+            setTaskReminder={setTaskReminder}
+            startEdit={startEdit}
+            togglePinTask={togglePinTask}
+            toggleTaskMenu={toggleTaskMenu}
+            updateReminderInput={updateReminderInput}
+            updateTaskStatus={updateTaskStatus}
+          />
+        )}
 
-            <select value={sort} onChange={handleSortChange}>
-              <option value="createdAt,desc">Newest first</option>
-              <option value="createdAt,asc">Oldest first</option>
-              <option value="title,asc">Title A-Z</option>
-              <option value="title,desc">Title Z-A</option>
-            </select>
-          </div>
+        {isTelegramModalOpen && (
+          <TelegramSettingsModal
+            telegramLink={telegramLink}
+            telegramLoading={telegramLoading}
+            telegramStatus={telegramStatus}
+            onClose={closeTelegramSettings}
+            onCreateLink={createTelegramLink}
+            onDisconnect={disconnectTelegram}
+            onRefresh={() => fetchTelegramStatus(token, true)}
+          />
+        )}
 
-          <div className="sidebar-section">
-            <p className="section-title">Integrations</p>
-
-            <button
-                type="button"
-                className="telegram-settings-button"
-                onClick={openTelegramSettings}
-            >
-              <span>Telegram Settings</span>
-              <span className={telegramStatus.connected ? "integration-dot connected" : "integration-dot"} />
-            </button>
-          </div>
-
-          {isAdmin && (
-              <div className="sidebar-section">
-                <p className="section-title">Admin</p>
-
-                <button
-                    type="button"
-                    className={activeView === "admin" ? "admin-panel-button active" : "admin-panel-button"}
-                    onClick={openAdminPanel}
-                >
-                  <span>Admin Panel</span>
-                  <span className="admin-panel-dot" />
-                </button>
-              </div>
-          )}
-
-          <div className="project-links">
-            <p className="section-title">Project</p>
-
-            <a
-                href="https://github.com/iggorr1"
-                target="_blank"
-                rel="noreferrer"
-            >
-              GitHub profile
-            </a>
-          </div>
-
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
-        </aside>
-
-        <main className="main">
-          <header className="main-header">
-            <div>
-              <h1>
-                {activeView === "admin"
-                    ? "Admin Panel"
-                    : selectedStatus
-                      ? selectedStatus.replace("_", " ")
-                      : "All tasks"}
-              </h1>
-              <p>
-                {activeView === "admin"
-                    ? "Read-only overview of users, tasks and Telegram links"
-                    : `${tasks.length} task${tasks.length === 1 ? "" : "s"} loaded`}
-              </p>
-            </div>
-          </header>
-
-          {message && (
-              <div className={`message-banner ${messageType}`}>
-                {message}
-              </div>
-          )}
-
-          {activeView === "admin" ? (
-              <section className="admin-dashboard">
-                <div className="admin-toolbar">
-                  <div>
-                    <h2>System overview</h2>
-                    <p>Protected by backend <code>/admin/**</code> role checks.</p>
-                  </div>
-
-                  <button
-                      type="button"
-                      onClick={() => fetchAdminData(token)}
-                      disabled={adminLoading}
-                  >
-                    {adminLoading ? "Refreshing..." : "Refresh"}
-                  </button>
-                </div>
-
-                {adminError && (
-                    <div className="admin-error-card">
-                      <strong>{adminError}</strong>
-                      <p>Use an account with ADMIN role and login again after changing role in database.</p>
-                    </div>
-                )}
-
-                {adminLoading && !adminData.stats ? (
-                    <div className="admin-loading-card">Loading admin data...</div>
-                ) : (
-                    <>
-                      <div className="admin-stats-grid">
-                        <article className="admin-stat-card">
-                          <span>Total users</span>
-                          <strong>{adminData.stats?.totalUsers ?? 0}</strong>
-                        </article>
-
-                        <article className="admin-stat-card">
-                          <span>Total tasks</span>
-                          <strong>{adminData.stats?.totalTasks ?? 0}</strong>
-                        </article>
-
-                        <article className="admin-stat-card todo">
-                          <span>TODO</span>
-                          <strong>{adminData.stats?.todoTasks ?? 0}</strong>
-                        </article>
-
-                        <article className="admin-stat-card progress">
-                          <span>In progress</span>
-                          <strong>{adminData.stats?.inProgressTasks ?? 0}</strong>
-                        </article>
-
-                        <article className="admin-stat-card done">
-                          <span>Done</span>
-                          <strong>{adminData.stats?.doneTasks ?? 0}</strong>
-                        </article>
-                      </div>
-
-                      <section className="admin-panel-card">
-                        <div className="admin-panel-header">
-                          <div>
-                            <h3>Users</h3>
-                            <p>{adminData.users.length} account{adminData.users.length === 1 ? "" : "s"}</p>
-                          </div>
-                        </div>
-
-                        <div className="admin-table-wrapper">
-                          <table className="admin-table">
-                            <thead>
-                              <tr>
-                                <th>ID</th>
-                                <th>Login</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Telegram</th>
-                                <th>Chat ID</th>
-                                <th>Connected</th>
-                                <th>Created</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {adminData.users.length === 0 ? (
-                                  <tr>
-                                    <td colSpan="8" className="admin-empty-cell">No users loaded</td>
-                                  </tr>
-                              ) : (
-                                  adminData.users.map((user) => (
-                                      <tr key={user.id}>
-                                        <td>#{user.id}</td>
-                                        <td>
-                                          <strong>{user.login || "—"}</strong>
-                                          {user.name && <span>{user.name}</span>}
-                                        </td>
-                                        <td>{user.email || "—"}</td>
-                                        <td>
-                                          <span className={user.role === "ADMIN" ? "admin-role-badge" : "user-role-badge"}>
-                                            {user.role || "USER"}
-                                          </span>
-                                        </td>
-                                        <td>{formatTelegramUsername(user.telegramUsername)}</td>
-                                        <td>{user.telegramChatId || "—"}</td>
-                                        <td>{formatOptionalDate(user.telegramConnectedAt)}</td>
-                                        <td>{formatOptionalDate(user.createdAt)}</td>
-                                      </tr>
-                                  ))
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </section>
-
-                      <section className="admin-panel-card">
-                        <div className="admin-panel-header">
-                          <div>
-                            <h3>Recent tasks</h3>
-                            <p>Latest {Math.min(getRecentAdminTasks().length, 8)} of {adminData.tasks.length}</p>
-                          </div>
-                        </div>
-
-                        <div className="admin-task-list">
-                          {getRecentAdminTasks().length === 0 ? (
-                              <div className="admin-empty-card">No tasks loaded</div>
-                          ) : (
-                              getRecentAdminTasks().map((task) => (
-                                  <article className="admin-task-row" key={task.id}>
-                                    <div className="admin-task-main">
-                                      <div>
-                                        <span className="admin-task-id">#{task.id}</span>
-                                        <h4>{task.title || "Untitled task"}</h4>
-                                      </div>
-                                      <p>{task.description || "No description"}</p>
-                                    </div>
-
-                                    <div className="admin-task-meta-grid">
-                                      <span className={`status-badge ${task.status?.toLowerCase()}`}>
-                                        {task.status || "NO_STATUS"}
-                                      </span>
-                                      <span>Owner: {task.userLogin || `#${task.userId}`}</span>
-                                      <span>Created: {formatOptionalDate(task.createdAt)}</span>
-                                      <span>Reminder: {formatOptionalDate(task.reminderAt)}</span>
-                                      {task.pinned && <span className="admin-soft-badge">Pinned</span>}
-                                      {task.reminderSent && <span className="admin-soft-badge success">Reminder sent</span>}
-                                    </div>
-                                  </article>
-                              ))
-                          )}
-                        </div>
-                      </section>
-                    </>
-                )}
-              </section>
-          ) : (
-              <>
-          <section className="create-panel">
-            <form onSubmit={createTask}>
-              <input
-                  type="text"
-                  placeholder="New task title"
-                  value={newTitle}
-                  maxLength={TITLE_MAX_LENGTH}
-                  onChange={(e) => setNewTitle(e.target.value)}
-              />
-
-              <input
-                  type="text"
-                  placeholder="Description"
-                  value={newDescription}
-                  maxLength={DESCRIPTION_MAX_LENGTH}
-                  onChange={(e) => setNewDescription(e.target.value)}
-              />
-
-              <button type="submit">Create task</button>
-            </form>
-          </section>
-
-          <section className="tasks-grid">
-            {tasks.length === 0 ? (
-                <div className="empty-state">
-                  <h3>No tasks found</h3>
-                  <p>Create a task or change filters in the sidebar.</p>
-                </div>
-            ) : (
-                tasks.map((task) => (
-                    <article
-                        className={task.pinned ? "task-card pinned" : "task-card"}
-                        key={task.id}
-                    >
-                      <div className="task-card-header">
-                        <div className="task-title-block">
-                          <h3>{task.title}</h3>
-
-                          <span className={`status-badge ${task.status?.toLowerCase()}`}>
-                            {task.status || "NO_STATUS"}
-                          </span>
-                        </div>
-
-                        <div className="task-badges">
-                          {task.pinned && (
-                              <span className="pinned-badge" title="Pinned task">
-                                <PinIcon filled />
-                              </span>
-                          )}
-
-                          <div className="task-menu-wrapper">
-                            <button
-                                type="button"
-                                className={openTaskMenuId === task.id ? "task-menu-button active" : "task-menu-button"}
-                                onClick={() => toggleTaskMenu(task.id)}
-                                aria-label="Open task actions"
-                                aria-expanded={openTaskMenuId === task.id}
-                            >
-                              ⋯
-                            </button>
-
-                            {openTaskMenuId === task.id && (
-                                <div className="task-actions-menu">
-                                  <button
-                                      type="button"
-                                      onClick={() => {
-                                        togglePinTask(task.id);
-                                        closeTaskMenu();
-                                      }}
-                                  >
-                                    {task.pinned ? "Unpin" : "Pin"}
-                                  </button>
-
-                                  <button
-                                      type="button"
-                                      onClick={() => {
-                                        updateTaskStatus(task.id, "TODO");
-                                        closeTaskMenu();
-                                      }}
-                                  >
-                                    Move to TODO
-                                  </button>
-
-                                  <button
-                                      type="button"
-                                      onClick={() => {
-                                        updateTaskStatus(task.id, "IN_PROGRESS");
-                                        closeTaskMenu();
-                                      }}
-                                  >
-                                    Move to Progress
-                                  </button>
-
-                                  <button
-                                      type="button"
-                                      onClick={() => {
-                                        updateTaskStatus(task.id, "DONE");
-                                        closeTaskMenu();
-                                      }}
-                                  >
-                                    Move to Done
-                                  </button>
-
-                                  <button
-                                      type="button"
-                                      onClick={() => openReminderForTask(task.id)}
-                                  >
-                                    Set reminder
-                                  </button>
-
-                                  <button
-                                      type="button"
-                                      onClick={() => startEdit(task)}
-                                  >
-                                    Edit
-                                  </button>
-
-                                  <button
-                                      type="button"
-                                      className="danger-menu-item"
-                                      onClick={() => {
-                                        setTaskIdToDelete(task.id);
-                                        closeTaskMenu();
-                                      }}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {editingTaskId === task.id ? (
-                          <div className="edit-task-form">
-                            <input
-                                type="text"
-                                value={editTitle}
-                                maxLength={TITLE_MAX_LENGTH}
-                                onChange={(e) => setEditTitle(e.target.value)}
-                            />
-
-                            <input
-                                type="text"
-                                value={editDescription}
-                                maxLength={DESCRIPTION_MAX_LENGTH}
-                                onChange={(e) => setEditDescription(e.target.value)}
-                            />
-
-                            <div className="task-actions">
-                              <button onClick={() => saveEdit(task.id)}>Save</button>
-                              <button onClick={cancelEdit}>Cancel</button>
-                            </div>
-                          </div>
-                      ) : (
-                          <>
-                            <p>{task.description || "No description"}</p>
-
-                            <div className="task-meta">
-                              <span>Created: {formatTaskDate(task.createdAt)}</span>
-                              {task.reminderAt && (
-                                  <span>Reminder: {formatTaskDate(task.reminderAt)}</span>
-                              )}
-                              {task.reminderSent && <span className="sent-meta">Reminder sent</span>}
-                            </div>
-
-                            {openReminderTaskId === task.id && (
-                                <div className="task-reminder-panel">
-                                  <div className="task-reminder-meta">
-                                    <div className="task-reminder-meta-text">
-                                      <span>Reminder</span>
-                                      <strong>
-                                        {task.reminderAt ? formatTaskDate(task.reminderAt) : "Not set"}
-                                      </strong>
-                                      {task.reminderSent && <em>Sent</em>}
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        className="reminder-panel-close"
-                                        onClick={() => hideReminderPanel(task.id)}
-                                        aria-label="Hide reminder panel"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-
-                                  <div className="task-reminder-controls">
-                                    <label className="reminder-field reminder-date-field">
-                                      <span>Date</span>
-                                      <input
-                                          type="date"
-                                          value={getReminderInputValue(task).date}
-                                          onChange={(e) => updateReminderInput(task.id, "date", e.target.value)}
-                                          disabled={reminderLoadingTaskId === task.id}
-                                      />
-                                    </label>
-
-                                    <label className="reminder-field reminder-time-field">
-                                      <span>Time · 24h</span>
-                                      <div className="reminder-time-inputs">
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            maxLength="2"
-                                            placeholder="HH"
-                                            value={getReminderInputValue(task).hour}
-                                            onChange={(e) =>
-                                              updateReminderInput(
-                                                task.id,
-                                                "hour",
-                                                e.target.value.replace(/\D/g, "").slice(0, 2)
-                                              )
-                                            }
-                                            disabled={reminderLoadingTaskId === task.id}
-                                            aria-label="Reminder hour, 24-hour format"
-                                        />
-
-                                        <span aria-hidden="true">:</span>
-
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            maxLength="2"
-                                            placeholder="MM"
-                                            value={getReminderInputValue(task).minute}
-                                            onChange={(e) =>
-                                              updateReminderInput(
-                                                task.id,
-                                                "minute",
-                                                e.target.value.replace(/\D/g, "").slice(0, 2)
-                                              )
-                                            }
-                                            disabled={reminderLoadingTaskId === task.id}
-                                            aria-label="Reminder minute"
-                                        />
-                                      </div>
-                                    </label>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setTaskReminder(task.id)}
-                                        disabled={reminderLoadingTaskId === task.id}
-                                    >
-                                      {reminderLoadingTaskId === task.id ? "Saving..." : "Save reminder"}
-                                    </button>
-
-                                    {task.reminderAt && (
-                                        <button
-                                            type="button"
-                                            className="reminder-delete-button"
-                                            onClick={() => deleteTaskReminder(task.id)}
-                                            disabled={reminderLoadingTaskId === task.id}
-                                        >
-                                          {reminderLoadingTaskId === task.id ? "Deleting..." : "Delete reminder"}
-                                        </button>
-                                    )}
-                                  </div>
-
-                                  {!telegramStatus.connected && (
-                                      <p className="task-reminder-hint">
-                                        Connect Telegram first to receive reminders.
-                                      </p>
-                                  )}
-                                </div>
-                            )}
-                          </>
-                      )}
-                    </article>
-                ))
-            )}
-          </section>
-
-          <section className="credits-screenshot" aria-label="Project credits">
-            <p>
-              передаю привіт софії якби вона мені не написала я б не пофіксив баг зразу а на наступний день
-            </p>
-          </section>
-
-              </>
-          )}
-
-          {isTelegramModalOpen && (
-              <div
-                  className="modal-backdrop"
-                  role="presentation"
-                  onClick={closeTelegramSettings}
-              >
-                <div
-                    className="telegram-modal"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="telegram-modal-title"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="telegram-modal-header">
-                    <div>
-                      <h3 id="telegram-modal-title">Telegram Settings</h3>
-                      <p>Connect your Telegram chat to receive task reminders.</p>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="modal-close-button"
-                        onClick={closeTelegramSettings}
-                        aria-label="Close Telegram settings"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  <div className="telegram-status-card">
-                    <span>Status</span>
-                    <strong>{telegramStatus.connected ? "Connected" : "Not connected"}</strong>
-                    {telegramStatus.telegramUsername && (
-                        <p>@{telegramStatus.telegramUsername}</p>
-                    )}
-                    {telegramStatus.connectedAt && (
-                        <p>Connected: {formatTaskDate(telegramStatus.connectedAt)}</p>
-                    )}
-                  </div>
-
-                  {!telegramStatus.connected ? (
-                      <div className="telegram-connect-flow">
-                        <button
-                            type="button"
-                            onClick={createTelegramLink}
-                            disabled={telegramLoading}
-                        >
-                          {telegramLoading ? "Creating link..." : "Create Telegram link"}
-                        </button>
-
-                        {telegramLink && (
-                            <div className="telegram-link-card">
-                              <p>Open this link and press Start in Telegram:</p>
-                              <a href={telegramLink} target="_blank" rel="noreferrer">
-                                Open Telegram bot
-                              </a>
-                              <code>{telegramLink}</code>
-                            </div>
-                        )}
-                      </div>
-                  ) : (
-                      <button
-                          type="button"
-                          className="danger-button telegram-disconnect-button"
-                          onClick={disconnectTelegram}
-                          disabled={telegramLoading}
-                      >
-                        {telegramLoading ? "Disconnecting..." : "Disconnect Telegram"}
-                      </button>
-                  )}
-
-                  <button
-                      type="button"
-                      className="telegram-refresh-button"
-                      onClick={() => fetchTelegramStatus(token, true)}
-                      disabled={telegramLoading}
-                  >
-                    Refresh status
-                  </button>
-                </div>
-              </div>
-          )}
-
-          {taskIdToDelete && (
-              <div
-                  className="modal-backdrop"
-                  role="presentation"
-                  onClick={() => setTaskIdToDelete(null)}
-              >
-                <div
-                    className="delete-modal"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="delete-modal-title"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                  <h3 id="delete-modal-title">Delete task?</h3>
-                  <p>This action cannot be undone.</p>
-
-                  <div className="delete-modal-actions">
-                    <button
-                        type="button"
-                        onClick={() => setTaskIdToDelete(null)}
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                        type="button"
-                        className="danger-button"
-                        onClick={() => deleteTask(taskIdToDelete)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-          )}
-
-        </main>
-      </div>
+        {taskIdToDelete && (
+          <DeleteTaskModal
+            onCancel={() => setTaskIdToDelete(null)}
+            onConfirm={() => deleteTask(taskIdToDelete)}
+          />
+        )}
+      </main>
+    </div>
   );
 }
 
 export default App;
-
-
-
-
-
-
