@@ -31,6 +31,10 @@ export const authApi = {
   login(payload) {
     return axios.post(`${API_URL}/users/login`, payload);
   },
+
+  getGoogleLoginUrl() {
+    return `${API_URL}/oauth2/authorization/google`;
+  },
 };
 
 export const taskApi = {
