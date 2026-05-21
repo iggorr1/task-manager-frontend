@@ -13,6 +13,7 @@ function AuthPage({
   onNameChange,
   onPasswordChange,
   onRegister,
+  onGoogleLogin,
   onUseDemoAccount,
 }) {
   return (
@@ -74,6 +75,14 @@ function AuthPage({
             {authMode === "login" ? "Login" : "Register"}
           </button>
         </form>
+
+        <button
+          type="button"
+          className="google-login-button"
+          onClick={onGoogleLogin}
+        >
+          Continue with Google
+        </button>
 
         <div className="demo-account">
           <div>

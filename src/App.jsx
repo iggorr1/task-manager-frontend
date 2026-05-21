@@ -25,6 +25,11 @@ import {
 import "./App.css";
 
 function App() {
+  const oauthParams = new URLSearchParams(window.location.search);
+  const isOauthCallback = window.location.pathname === "/oauth/success";
+  const oauthToken = isOauthCallback ? oauthParams.get("token") : "";
+  const oauthLogin = isOauthCallback ? oauthParams.get("login") : "";
+
   const [authMode, setAuthMode] = useState("login");
 
   const [name, setName] = useState("");
@@ -33,8 +38,8 @@ function App() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
 
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [currentLogin, setCurrentLogin] = useState(localStorage.getItem("login") || "");
+  const [token, setToken] = useState(oauthToken || localStorage.getItem("token") || "");
+  const [currentLogin, setCurrentLogin] = useState(oauthLogin || localStorage.getItem("login") || "");
   const [tasks, setTasks] = useState([]);
   const [allTasks, setAllTasks] = useState([]);
 
@@ -53,7 +58,7 @@ function App() {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [taskIdToDelete, setTaskIdToDelete] = useState(null);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState(oauthToken ? "Google login successful." : null);
   const [messageType, setMessageType] = useState("success");
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [telegramStatus, setTelegramStatus] = useState(EMPTY_TELEGRAM_STATUS);
@@ -70,19 +75,13 @@ function App() {
   const [adminError, setAdminError] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const oauthToken = params.get("token");
-    const oauthLogin = params.get("login");
-
-    if (!oauthToken || window.location.pathname !== "/oauth/success") {
+    if (!oauthToken) {
       return;
     }
 
-    setToken(oauthToken);
     localStorage.setItem("token", oauthToken);
 
     if (oauthLogin) {
-      setCurrentLogin(oauthLogin);
       localStorage.setItem("login", oauthLogin);
     }
 
@@ -91,7 +90,6 @@ function App() {
     fetchAllTasks(oauthToken);
     fetchTelegramStatus(oauthToken, false);
     checkAdminAccess(oauthToken);
-    showMessage("Google login successful.");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -191,6 +189,10 @@ function App() {
     setAuthMode("login");
     setLogin("demo");
     setPassword("demo123");
+  }
+
+  function handleGoogleLogin() {
+    window.location.href = authApi.getGoogleLoginUrl();
   }
 
   async function handleRegister(e) {
@@ -903,6 +905,7 @@ function App() {
         onNameChange={setName}
         onPasswordChange={setPassword}
         onRegister={handleRegister}
+        onGoogleLogin={handleGoogleLogin}
         onUseDemoAccount={useDemoAccount}
       />
     );

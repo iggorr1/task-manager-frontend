@@ -56,6 +56,7 @@ Backend stack used by the API:
 
 - Register new account
 - Login with JWT
+- Continue with Google
 - Store token in `localStorage`
 - Logout
 - Demo account shortcut
@@ -171,6 +172,18 @@ For production builds, use:
 
 ```env
 VITE_API_URL=https://api.wwwho.lol
+```
+
+Google login starts on the backend at:
+
+```text
+${VITE_API_URL}/oauth2/authorization/google
+```
+
+After successful Google OAuth2 login, the backend redirects back to:
+
+```text
+/oauth/success?token=<jwt>&login=<login>
 ```
 
 ---

@@ -180,6 +180,19 @@ form {
   background: #373144;
 }
 
+.google-login-button {
+  width: 100%;
+  margin-top: 12px;
+  background: #f8fafc;
+  color: #1f2937;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.google-login-button:hover {
+  background: #ffffff;
+  color: #111827;
+}
+
 /* LAYOUT */
 
 .workspace {
