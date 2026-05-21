@@ -1,10 +1,8 @@
-# TaskFlow — Frontend
+# TaskFlow - Frontend
 
-React frontend for **TaskFlow**, a full-stack task management application with JWT authentication, task workflow statuses, pinned tasks, filtering, sorting, Telegram connection, and Telegram reminder scheduling.
+React frontend for **TaskFlow**, a full-stack task manager with JWT login, Google OAuth2 login, task workflow statuses, pinned tasks, filtering, sorting, Telegram connection, and Telegram reminder scheduling.
 
-The app is built as a portfolio-ready frontend that works with a Spring Boot backend and is deployed publicly through Docker, Nginx, and Cloudflare Tunnel.
-
----
+The frontend is deployed publicly with Docker, Nginx, and Cloudflare Tunnel. It communicates with a Spring Boot backend API.
 
 ## Live Demo
 
@@ -18,8 +16,6 @@ Backend API:
 https://api.wwwho.lol
 ```
 
----
-
 ## Demo Account
 
 ```text
@@ -27,7 +23,7 @@ Login: demo
 Password: demo123
 ```
 
----
+Google login is also available when the backend is configured with Google OAuth credentials.
 
 ## Tech Stack
 
@@ -39,25 +35,26 @@ Password: demo123
 - Docker
 - Cloudflare Tunnel
 
-Backend stack used by the API:
+Backend API stack:
 
 - Java
 - Spring Boot
 - Spring Security
 - JWT
+- Google OAuth2
 - PostgreSQL
+- Flyway
 - Telegram Bot API
-
----
 
 ## Features
 
-### Auth UI
+### Authentication UI
 
 - Register new account
-- Login with JWT
+- Login with username/password
 - Continue with Google
-- Store token in `localStorage`
+- Store JWT token in `localStorage`
+- Handle OAuth callback from backend
 - Logout
 - Demo account shortcut
 
@@ -67,19 +64,16 @@ Backend stack used by the API:
 - Edit task title and description
 - Delete tasks with confirmation modal
 - View current user's tasks
-- Task status workflow:
-  - `TODO`
-  - `IN_PROGRESS`
-  - `DONE`
+- Task status workflow: `TODO`, `IN_PROGRESS`, `DONE`
 - Pin/unpin important tasks
-- Pinned tasks are displayed first
+- Pinned tasks displayed first
 - Task counters by status
 - Search by title
 - Filter by status
 - Sort by creation date or title
 - Persist selected filter and sort in `localStorage`
 
-### Task Actions Menu
+### Task Actions
 
 Task card actions are grouped into a popup menu:
 
@@ -93,7 +87,7 @@ Task card actions are grouped into a popup menu:
 
 ### Telegram Integration
 
-- Telegram Settings panel
+- Telegram settings modal
 - Check Telegram connection status
 - Generate Telegram bot link
 - Open Telegram bot link
@@ -103,13 +97,10 @@ Task card actions are grouped into a popup menu:
 ### Reminder UI
 
 - Set reminder date
-- Set reminder time in 24-hour format
+- Set reminder time
 - Send reminder request to backend
 - Show current reminder date/time
 - Show `Reminder sent` state
-- Hide reminder panel without deleting the reminder
-
----
 
 ## Project Structure
 
@@ -134,13 +125,11 @@ task-manager-frontend
 `-- README.md
 ```
 
----
-
 ## Backend Integration
 
 The API base URL is configured through `VITE_API_URL`.
 
-Current fallback in the app:
+Fallback in the app:
 
 ```js
 const API_URL = import.meta.env.VITE_API_URL || "https://api.wwwho.lol";
@@ -152,41 +141,49 @@ Production API:
 https://api.wwwho.lol
 ```
 
-Local backend example:
+Local backend:
 
 ```text
 http://localhost:8080
 ```
 
----
-
 ## Environment Variables
 
-Create `.env.local` for local development:
+Local development:
 
 ```env
 VITE_API_URL=http://localhost:8080
 ```
 
-For production builds, use:
+Production build:
 
 ```env
 VITE_API_URL=https://api.wwwho.lol
 ```
 
-Google login starts on the backend at:
+## Google Login Flow
+
+The frontend starts Google login by redirecting the browser to the backend:
 
 ```text
 ${VITE_API_URL}/oauth2/authorization/google
 ```
 
-After successful Google OAuth2 login, the backend redirects back to:
+The backend handles Google OAuth2, creates a JWT, and redirects back to the frontend:
 
 ```text
 /oauth/success?token=<jwt>&login=<login>
 ```
 
----
+The frontend then stores the JWT and opens the authenticated task dashboard.
+
+Google Cloud Console must contain the backend redirect URI:
+
+```text
+https://api.wwwho.lol/login/oauth2/code/google
+```
+
+If Google reports `redirect_uri_mismatch`, open the error details and compare the exact `redirect_uri` with the values configured in Google Console.
 
 ## Local Development
 
@@ -214,15 +211,15 @@ Run on local network:
 npm run dev -- --host 0.0.0.0
 ```
 
----
+## Build and Lint
 
-## Build
+Build:
 
 ```bash
 npm run build
 ```
 
-Preview production build locally:
+Preview production build:
 
 ```bash
 npm run preview
@@ -233,8 +230,6 @@ Lint:
 ```bash
 npm run lint
 ```
-
----
 
 ## Docker
 
@@ -258,22 +253,19 @@ Open:
 http://localhost:8081
 ```
 
----
-
 ## Deployment
 
 Production deployment flow:
 
 ```text
-GitHub
-|
-git pull on Ubuntu server
-|
-Docker Compose rebuild
-|
-Nginx container serves frontend
-|
-Cloudflare Tunnel exposes wwwho.lol
+GitHub -> Ubuntu Server -> Docker Compose rebuild -> Nginx container -> Cloudflare Tunnel
+```
+
+Server deployment command:
+
+```bash
+cd ~/apps/task-flow
+./deploy.sh
 ```
 
 Production frontend:
@@ -288,35 +280,25 @@ Production API:
 https://api.wwwho.lol
 ```
 
-Deployment command on server:
-
-```bash
-cd ~/apps/task-flow
-./deploy.sh
-```
-
----
-
 ## Screenshots To Add
 
-Recommended screenshots for the final portfolio README:
+Recommended screenshots for portfolio:
 
-- Login page with demo account
+- Login page with Google button
 - Main task dashboard
 - Task action menu
-- Telegram Settings modal
+- Telegram settings modal
 - Reminder panel
 - Telegram reminder message
 - Mobile layout
-
----
 
 ## Current Status
 
 Implemented:
 
-- Auth UI
-- JWT login flow
+- JWT login UI
+- Google login button and callback handling
+- Registration
 - Task CRUD UI
 - Status workflow
 - Task pinning
@@ -325,10 +307,13 @@ Implemented:
 - Persisted filters and sorting
 - Telegram settings UI
 - Telegram reminder scheduling UI
+- Admin dashboard view
 - Docker + Nginx production setup
 - Public deployment on custom domain
 
-Planned / possible improvements:
+Possible improvements:
 
+- Add frontend tests
+- Add better form-level validation messages
+- Add loading skeletons for dashboard sections
 - Add screenshots to README
-- Add better loading states and form-level error messages
