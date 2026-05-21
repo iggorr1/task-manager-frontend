@@ -70,6 +70,32 @@ function App() {
   const [adminError, setAdminError] = useState("");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get("token");
+    const oauthLogin = params.get("login");
+
+    if (!oauthToken || window.location.pathname !== "/oauth/success") {
+      return;
+    }
+
+    setToken(oauthToken);
+    localStorage.setItem("token", oauthToken);
+
+    if (oauthLogin) {
+      setCurrentLogin(oauthLogin);
+      localStorage.setItem("login", oauthLogin);
+    }
+
+    window.history.replaceState({}, "", "/");
+    fetchTasks(oauthToken, selectedStatus, searchTitle, sort);
+    fetchAllTasks(oauthToken);
+    fetchTelegramStatus(oauthToken, false);
+    checkAdminAccess(oauthToken);
+    showMessage("Google login successful.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (!token) {
       return;
     }
