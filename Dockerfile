@@ -2,6 +2,12 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_API_URL=https://api.wwwho.lol
+ARG VITE_TURNSTILE_SITE_KEY=
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
+
 COPY package*.json ./
 RUN npm install
 
