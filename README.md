@@ -202,6 +202,22 @@ Frontend receives a public Turnstile token and sends it to the backend as:
 
 The backend validates the token with Cloudflare before processing login or registration. The secret key stays only on the backend.
 
+Cloudflare Turnstile widget settings:
+
+```text
+Widget name: TaskFlow
+Hostname:    wwwho.lol
+Mode:        Managed
+```
+
+Production `.env` value used by the frontend build:
+
+```env
+VITE_TURNSTILE_SITE_KEY=your-cloudflare-turnstile-site-key
+```
+
+The site key is public. The secret key must not be added to the frontend repository or frontend Docker image.
+
 ## Local Development
 
 Install dependencies:
@@ -284,6 +300,8 @@ Server deployment command:
 cd ~/apps/task-flow
 ./deploy.sh
 ```
+
+If the widget does not appear after deployment, confirm that `VITE_TURNSTILE_SITE_KEY` is available during the frontend Docker build. Vite embeds `VITE_*` variables at build time.
 
 Production frontend:
 
