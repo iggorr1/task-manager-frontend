@@ -42,6 +42,7 @@ Backend API stack:
 - Spring Security
 - JWT
 - Google OAuth2
+- Cloudflare Turnstile
 - PostgreSQL
 - Flyway
 - Telegram Bot API
@@ -53,6 +54,7 @@ Backend API stack:
 - Register new account
 - Login with username/password
 - Continue with Google
+- Cloudflare Turnstile verification for password auth
 - Store JWT token in `localStorage`
 - Handle OAuth callback from backend
 - Logout
@@ -159,6 +161,7 @@ Production build:
 
 ```env
 VITE_API_URL=https://api.wwwho.lol
+VITE_TURNSTILE_SITE_KEY=replace-with-turnstile-site-key
 ```
 
 ## Google Login Flow
@@ -184,6 +187,20 @@ https://api.wwwho.lol/login/oauth2/code/google
 ```
 
 If Google reports `redirect_uri_mismatch`, open the error details and compare the exact `redirect_uri` with the values configured in Google Console.
+
+## Cloudflare Turnstile
+
+The password login and registration form renders a Cloudflare Turnstile widget when `VITE_TURNSTILE_SITE_KEY` is configured.
+
+Frontend receives a public Turnstile token and sends it to the backend as:
+
+```json
+{
+  "turnstileToken": "<token>"
+}
+```
+
+The backend validates the token with Cloudflare before processing login or registration. The secret key stays only on the backend.
 
 ## Local Development
 
@@ -298,6 +315,7 @@ Implemented:
 
 - JWT login UI
 - Google login button and callback handling
+- Turnstile captcha widget for password auth
 - Registration
 - Task CRUD UI
 - Status workflow
