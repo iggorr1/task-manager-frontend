@@ -24,7 +24,14 @@ function loadTurnstileScript() {
 
 function TurnstileWidget({ refreshKey, siteKey, onExpire, onVerify }) {
   const containerRef = useRef(null);
+  const onExpireRef = useRef(onExpire);
+  const onVerifyRef = useRef(onVerify);
   const widgetIdRef = useRef(null);
+
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+    onVerifyRef.current = onVerify;
+  }, [onExpire, onVerify]);
 
   useEffect(() => {
     if (!siteKey || !containerRef.current) {
@@ -41,14 +48,14 @@ function TurnstileWidget({ refreshKey, siteKey, onExpire, onVerify }) {
 
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          callback: onVerify,
-          "expired-callback": onExpire,
-          "error-callback": onExpire,
+          callback: (token) => onVerifyRef.current(token),
+          "expired-callback": () => onExpireRef.current(),
+          "error-callback": () => onExpireRef.current(),
           theme: "auto",
         });
       })
       .catch(() => {
-        onExpire();
+        onExpireRef.current();
       });
 
     return () => {
@@ -59,7 +66,7 @@ function TurnstileWidget({ refreshKey, siteKey, onExpire, onVerify }) {
         widgetIdRef.current = null;
       }
     };
-  }, [onExpire, onVerify, refreshKey, siteKey]);
+  }, [refreshKey, siteKey]);
 
   if (!siteKey) {
     return null;
