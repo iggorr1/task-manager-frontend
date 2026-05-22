@@ -13,6 +13,7 @@ import {
   isUnauthorizedError,
   taskApi,
   telegramApi,
+  TURNSTILE_SITE_KEY,
 } from "./api/taskFlowApi";
 import {
   DESCRIPTION_MAX_LENGTH,
@@ -37,6 +38,8 @@ function App() {
 
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileRefreshKey, setTurnstileRefreshKey] = useState(0);
 
   const [token, setToken] = useState(oauthToken || localStorage.getItem("token") || "");
   const [currentLogin, setCurrentLogin] = useState(oauthLogin || localStorage.getItem("login") || "");
@@ -133,6 +136,11 @@ function App() {
     setMessageType("success");
   }
 
+  function resetTurnstile() {
+    setTurnstileToken("");
+    setTurnstileRefreshKey((currentKey) => currentKey + 1);
+  }
+
   function getTaskValidationMessage(title, description) {
     if (!title.trim()) {
       return "Title is required";
@@ -189,6 +197,7 @@ function App() {
     setAuthMode("login");
     setLogin("demo");
     setPassword("demo123");
+    resetTurnstile();
   }
 
   function handleGoogleLogin() {
@@ -205,12 +214,15 @@ function App() {
         email,
         login,
         password,
+        turnstileToken,
       });
 
       showMessage("Registration successful. Now login.");
       setAuthMode("login");
+      resetTurnstile();
     } catch (error) {
-      showMessage("Register failed", "error");
+      showMessage(getRequestErrorMessage(error, "Register failed"), "error");
+      resetTurnstile();
       console.error("Request failed:", {
         status: error?.response?.status,
         message: error?.response?.data?.message || error?.message,
@@ -226,6 +238,7 @@ function App() {
       const response = await authApi.login({
         login,
         password,
+        turnstileToken,
       });
 
       const jwt = response.data.token;
@@ -239,8 +252,10 @@ function App() {
       await fetchAllTasks(jwt);
       await checkAdminAccess(jwt);
       showMessage("Login successful.");
+      resetTurnstile();
     } catch (error) {
-      showMessage("Login failed", "error");
+      showMessage(getRequestErrorMessage(error, "Login failed"), "error");
+      resetTurnstile();
       console.error("Request failed:", {
         status: error?.response?.status,
         message: error?.response?.data?.message || error?.message,
@@ -898,7 +913,14 @@ function App() {
         messageType={messageType}
         name={name}
         password={password}
-        onAuthModeChange={setAuthMode}
+        captchaRefreshKey={turnstileRefreshKey}
+        captchaSiteKey={TURNSTILE_SITE_KEY}
+        onAuthModeChange={(nextMode) => {
+          setAuthMode(nextMode);
+          resetTurnstile();
+        }}
+        onCaptchaExpire={() => setTurnstileToken("")}
+        onCaptchaVerify={setTurnstileToken}
         onEmailChange={setEmail}
         onLogin={handleLogin}
         onLoginChange={setLogin}

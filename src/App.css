@@ -193,6 +193,13 @@ form {
   color: #111827;
 }
 
+.turnstile-widget {
+  display: flex;
+  justify-content: center;
+  min-height: 65px;
+  overflow: hidden;
+}
+
 /* LAYOUT */
 
 .workspace {

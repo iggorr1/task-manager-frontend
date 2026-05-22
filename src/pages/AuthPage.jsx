@@ -1,5 +1,9 @@
+import TurnstileWidget from "../components/auth/TurnstileWidget";
+
 function AuthPage({
   authMode,
+  captchaRefreshKey,
+  captchaSiteKey,
   email,
   login,
   message,
@@ -7,6 +11,8 @@ function AuthPage({
   name,
   password,
   onAuthModeChange,
+  onCaptchaExpire,
+  onCaptchaVerify,
   onEmailChange,
   onLogin,
   onLoginChange,
@@ -74,6 +80,13 @@ function AuthPage({
           <button type="submit">
             {authMode === "login" ? "Login" : "Register"}
           </button>
+
+          <TurnstileWidget
+            refreshKey={`${authMode}-${captchaRefreshKey}`}
+            siteKey={captchaSiteKey}
+            onVerify={onCaptchaVerify}
+            onExpire={onCaptchaExpire}
+          />
         </form>
 
         <button
